@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Helpers\ValidationHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -38,12 +39,7 @@ class CommercialRequest extends FormRequest
                 "min:3",
                 "max:100"
             ],
-            "commercial_telephone" => [
-                "required",
-                "string",
-                "regex:/^0[671][0-9]{8}$/",
-                Rule::unique('commerciaux')->ignore($this->route('commercial'))
-            ]
+            "commercial_telephone" => ValidationHelper::telephoneRules('commercial_telephone', 'commerciaux', $this->route('commercial'))
         ];
     }
 
@@ -59,9 +55,7 @@ class CommercialRequest extends FormRequest
             "commercial_fullName.min" => "Le nom doit contenir au moins 3 caractères.",
             "commercial_fullName.max" => "Le nom doit contenir au plus 100 caractères.",
 
-            "commercial_telephone.required" => "Le numéro de téléphone est obligatoire.",
-            "commercial_telephone.regex" => "Le numéro de téléphone doit être au format marocain (06/07xxxxxxxx).",
-            "commercial_telephone.unique" => "Ce numéro de téléphone existe déjà."
+            ...ValidationHelper::telephoneMessages('commercial_telephone')
         ];
     }
 }

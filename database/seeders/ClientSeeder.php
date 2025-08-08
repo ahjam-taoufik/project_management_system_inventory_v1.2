@@ -24,7 +24,7 @@ class ClientSeeder extends Seeder
 
         // ✅ APPROCHE DIRECTE : IDs directs (simple et performant)
         $clients = [
-            ['code' => 'CL000', 'fullName' => 'ELHILALY ABDENNABI', 'telephone' => '', 'idVille' => 9, 'idSecteur' => 1, 'idCommercial' => 1, 'remise_special' => 0, 'pourcentage' => 0],
+            ['code' => 'CL000', 'fullName' => 'ELHILALY ABDENNABI', 'telephone' => '0667711359', 'idVille' => 9, 'idSecteur' => 1, 'idCommercial' => 1, 'remise_special' => 0, 'pourcentage' => 0],
             ['code' => 'CL001', 'fullName' => 'LHAJ LHASSROUF', 'telephone' => '', 'idVille' => 1, 'idSecteur' => 10, 'idCommercial' => 1, 'remise_special' => 0, 'pourcentage' => 0],
             ['code' => 'CL002', 'fullName' => 'TAFOUKT YOUSSEF', 'telephone' => '', 'idVille' => 1, 'idSecteur' => 10, 'idCommercial' => 1, 'remise_special' => 0, 'pourcentage' => 0],
             ['code' => 'CL003', 'fullName' => 'CHIRAOUI ABDERRAHMANE', 'telephone' => '', 'idVille' => 2, 'idSecteur' => 16, 'idCommercial' => 1, 'remise_special' => 0, 'pourcentage' => 0],

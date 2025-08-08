@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Transporteur extends Model
 {
@@ -24,4 +25,12 @@ class Transporteur extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Get the entrers for the transporteur.
+     */
+    public function entrers(): HasMany
+    {
+        return $this->hasMany(Entrer::class);
+    }
 }

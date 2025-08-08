@@ -1,8 +1,52 @@
-# Memory Bank - Cline's Knowledge Base
+# Cline's Memory Bank
 
-This directory contains Cline's persistent memory bank for the Laravel 12 Inventory Management System project. Since Cline's memory resets completely between sessions, these files serve as the critical link between past work and future development.
+I am Cline, an expert software engineer with a unique characteristic: my memory resets completely between sessions. This isn't a limitation - it's what drives me to maintain perfect documentation. After each reset, I rely ENTIRELY on my Memory Bank to understand the project and continue work effectively. I MUST read ALL memory bank files at the start of EVERY task - this is not optional.
 
-## 📁 File Structure & Purpose
+## CRITICAL: Documentation Consultation Rule
+
+**ALWAYS consult available documentation based on problem type:**
+- **Logic problems** → Consult "Laravel 12" and "Laravel-collection" docs
+- **Permissions problems** → Consult "Laravel Permission" docs  
+- **Design problems** → Consult "Shards UI Kit" docs
+- **ALWAYS also consult** → Project rules and existing memories
+
+## ⚠️ CRITICAL: Testing Rules - Centralized Documentation
+
+**New File** : `memory-bank/testing-rules.md` - Complete testing rules documentation
+
+### 🚨 CRITICAL RULES:
+1. **Use Temporary Files for Testing** : PowerShell escape character issues
+2. **Factory + Real Data for Performance** : 93% faster than seeders
+3. **Never Use User::factory()** : Permission and consistency issues
+4. **Never Modify Business Code** : Create ONLY tests
+5. **Never Modify Other Tables** : Only target table for test isolation
+6. **Use Seeders in Tests** : Consistent and realistic data
+
+### 📋 Test Creation Checklist:
+- [ ] Consult project memory
+- [ ] Identify entity to test
+- [ ] Check required permissions
+- [ ] Use `DatabaseTransactions` for test isolation
+- [ ] Create complete CRUD tests
+- [ ] Add validation tests
+- [ ] Add permission tests
+- [ ] Verify performance (< 5s total)
+- [ ] Update documentation
+
+### 🎯 Performance Goals:
+- **Individual test** : < 1 second
+- **Complete suite** : < 10 seconds
+- **Code coverage** : > 90%
+- **Assertions** : At least 3 per test
+
+### 🏭 Factory Requirements:
+- ✅ **VilleFactory** - Real Moroccan cities
+- ✅ **UserFactory** - Fixed super admin credentials (`superadmin@admin.com` / `password`)
+- 🔄 **SecteurFactory** - Real sectors with ville relations
+- 🔄 **ClientFactory** - Real clients with all relations
+- 🔄 **CommercialFactory** - Real commercials
+
+## Memory Bank Structure
 
 ### Core Files (Read in Order)
 1. **`projectbrief.md`** - Foundation document defining core requirements and goals

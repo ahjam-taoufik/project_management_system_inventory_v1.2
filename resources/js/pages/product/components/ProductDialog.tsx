@@ -110,9 +110,14 @@ export default function ProductDialog({ duplicateData, isOpen, onOpenChange }: P
   };
 
   // Filtrer les catégories par marque sélectionnée
-  const filteredCategories = data.brand_id
-    ? categoriesArray.filter(cat => cat.brand_id.toString() === data.brand_id)
-    : categoriesArray;
+  const filteredCategories = data.brand_id && categoriesArray && categoriesArray.length > 0
+    ? categoriesArray.filter(cat => {
+        // Vérification de sécurité pour éviter les erreurs
+        if (!cat || !cat.brand_id) return false;
+        // Comparaison robuste avec conversion explicite
+        return String(cat.brand_id) === String(data.brand_id);
+      })
+    : categoriesArray || [];
 
   return (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal={false}>

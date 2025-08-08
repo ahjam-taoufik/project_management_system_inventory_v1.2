@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Helpers\ValidationHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -75,12 +76,7 @@ class ClientRequest extends FormRequest
                 "min:0",
                 "max:100"
             ],
-            "telephone" => [
-                "nullable",
-                "string",
-                "min:10",
-                "max:20"
-            ]
+            "telephone" => ValidationHelper::optionalTelephoneRules('telephone', 'clients', $this->route('client'))
         ];
     }
 
@@ -108,9 +104,7 @@ class ClientRequest extends FormRequest
             "pourcentage.numeric" => "Le pourcentage doit être un nombre.",
             "pourcentage.min" => "Le pourcentage doit être positif.",
             "pourcentage.max" => "Le pourcentage ne peut pas dépasser 100.",
-            "telephone.string" => "Le téléphone doit être une chaîne de caractères.",
-            "telephone.min" => "Le téléphone doit contenir au moins 10 caractères.",
-            "telephone.max" => "Le téléphone doit contenir au plus 20 caractères."
+            ...ValidationHelper::telephoneMessages('telephone')
         ];
     }
 }

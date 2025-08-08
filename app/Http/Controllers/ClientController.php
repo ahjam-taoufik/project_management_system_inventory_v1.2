@@ -12,6 +12,7 @@ use App\Models\Commercial;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Log;
 
 class ClientController extends Controller
 {
@@ -69,10 +70,15 @@ class ClientController extends Controller
                 'telephone' => $request->validated()['telephone'],
             ]);
 
-            return redirect()->route('clients.index')->with('success', 'Client créé avec succès');
+            if ($client) {
+                return redirect()->route('clients.index')->with('success', 'Client créé avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Impossible de créer le client. Veuillez réessayer.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la création: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur ClientController::store: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la création du client.')->withInput();
         }
     }
 
@@ -111,7 +117,7 @@ class ClientController extends Controller
         try {
             $validatedData = $request->validated();
 
-            $client->update([
+            $updated = $client->update([
                 'code' => $validatedData['code'],
                 'fullName' => $validatedData['fullName'],
                 'idVille' => $validatedData['idVille'],
@@ -122,10 +128,15 @@ class ClientController extends Controller
                 'telephone' => $validatedData['telephone'],
             ]);
 
-            return redirect()->route('clients.index')->with('success', 'Client mis à jour avec succès.');
+            if ($updated) {
+                return redirect()->route('clients.index')->with('success', 'Client mis à jour avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Aucune modification effectuée sur le client.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur ClientController::update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la mise à jour du client.')->withInput();
         }
     }
 
@@ -140,11 +151,21 @@ class ClientController extends Controller
         }
 
         try {
-            $client->delete();
-            return redirect()->route('clients.index')->with('success', 'Client supprimé avec succès');
+            if ($client) {
+                $deleted = $client->delete();
+
+                if ($deleted) {
+                    return redirect()->route('clients.index')->with('success', 'Client supprimé avec succès');
+                }
+
+                return redirect()->back()->with('error', 'Impossible de supprimer le client. Veuillez réessayer.');
+            }
+
+            return redirect()->back()->with('error', 'Client introuvable.');
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la suppression: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur ClientController::destroy: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la suppression du client.');
         }
     }
 

@@ -29,10 +29,12 @@ return new class extends Migration
             $table->decimal('total_poids', 10, 2)->default(0);
             $table->decimal('montant_remise_especes', 10, 2)->default(0);
             $table->decimal('total_bl', 12, 2)->default(0);
+            $table->boolean('archived')->default(false);
             $table->timestamps();
 
             $table->index(['numero_bl', 'date_bl']);
             $table->index(['commercial_id', 'client_id']);
+            $table->index(['archived']);
         });
     }
 

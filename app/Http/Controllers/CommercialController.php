@@ -8,6 +8,7 @@ use App\Http\Requests\CommercialRequest;
 use App\Models\Commercial;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Log;
 
 class CommercialController extends Controller
 {
@@ -56,10 +57,15 @@ class CommercialController extends Controller
                 'commercial_telephone' => $request->validated()['commercial_telephone'],
             ]);
 
-            return redirect()->route('commerciaux.index')->with('success', 'Commercial créé avec succès');
+            if ($commercial) {
+                return redirect()->route('commerciaux.index')->with('success', 'Commercial créé avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Impossible de créer le commercial. Veuillez réessayer.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la création: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur CommercialController::store: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la création du commercial.')->withInput();
         }
     }
 
@@ -98,16 +104,21 @@ class CommercialController extends Controller
         try {
             $validatedData = $request->validated();
 
-            $commercial->update([
+            $updated = $commercial->update([
                 'commercial_code' => $validatedData['commercial_code'],
                 'commercial_fullName' => $validatedData['commercial_fullName'],
                 'commercial_telephone' => $validatedData['commercial_telephone']
             ]);
 
-            return redirect()->route('commerciaux.index')->with('success', 'Commercial mis à jour avec succès.');
+            if ($updated) {
+                return redirect()->route('commerciaux.index')->with('success', 'Commercial mis à jour avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Aucune modification effectuée sur le commercial.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur CommercialController::update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la mise à jour du commercial.')->withInput();
         }
     }
 
@@ -122,11 +133,21 @@ class CommercialController extends Controller
         }
 
         try {
-            $commercial->delete();
-            return redirect()->route('commerciaux.index')->with('success', 'Commercial supprimé avec succès');
+            if ($commercial) {
+                $deleted = $commercial->delete();
+
+                if ($deleted) {
+                    return redirect()->route('commerciaux.index')->with('success', 'Commercial supprimé avec succès');
+                }
+
+                return redirect()->back()->with('error', 'Impossible de supprimer le commercial. Veuillez réessayer.');
+            }
+
+            return redirect()->back()->with('error', 'Commercial introuvable.');
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la suppression: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur CommercialController::destroy: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la suppression du commercial.');
         }
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Ville;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Log;
 
 class VilleController extends Controller
 {
@@ -51,10 +52,15 @@ class VilleController extends Controller
                 'nameVille' => $request->validated()['nameVille'],
             ]);
 
-            return redirect()->route('villes.index')->with('success', 'Ville créée avec succès');
+            if ($ville) {
+                return redirect()->route('villes.index')->with('success', 'Ville créée avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Impossible de créer la ville. Veuillez réessayer.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la création: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur VilleController::store: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la création de la ville.')->withInput();
         }
     }
 
@@ -91,16 +97,19 @@ class VilleController extends Controller
         }
 
         try {
-                $ville->nameVille = $request->nameVille;
-                $ville->save();
+            $updated = $ville->update([
+                'nameVille' => $request->validated()['nameVille'],
+            ]);
 
-                if ($ville) {
-                     return redirect()->route('villes.index')->with('success', 'Ville updated successfully.');
-                 }
-                return redirect()->back()->with('error', 'Unable to uipdate Ville. Please try again.');
+            if ($updated) {
+                return redirect()->route('villes.index')->with('success', 'Ville mise à jour avec succès');
+            }
 
-        } catch (\Exception $th) {
-            return redirect()->back()->with('error', 'Failed to update Ville.');
+            return redirect()->back()->with('error', 'Aucune modification effectuée sur la ville.')->withInput();
+
+        } catch (\Exception $e) {
+            Log::error('Erreur VilleController::update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la mise à jour de la ville.')->withInput();
         }
     }
 
@@ -116,12 +125,20 @@ class VilleController extends Controller
 
         try {
             if ($ville) {
-                $ville->delete();
-                return redirect()->route('villes.index')->with('success', 'Ville Supprimer avec succès');
+                $deleted = $ville->delete();
+
+                if ($deleted) {
+                    return redirect()->route('villes.index')->with('success', 'Ville supprimée avec succès');
+                }
+
+                return redirect()->back()->with('error', 'Impossible de supprimer la ville. Veuillez réessayer.');
             }
 
-         } catch (\Exception $e) {
-        return redirect()->back()->withErrors(['message' => 'Erreur lors de la Suppression: ' . $e->getMessage()])->withInput();
-    }
+            return redirect()->back()->with('error', 'Ville introuvable.');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur VilleController::destroy: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la suppression de la ville.');
+        }
     }
 }

@@ -6,10 +6,6 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Sortie;
 use App\Models\SortieProduct;
-use App\Models\Commercial;
-use App\Models\Client;
-use App\Models\Product;
-use Carbon\Carbon;
 
 class SortieSeeder extends Seeder
 {
@@ -18,108 +14,336 @@ class SortieSeeder extends Seeder
      */
     public function run(): void
     {
-        // Récupérer des données existantes
-        $commerciaux = Commercial::all();
-        $clients = Client::all();
-        $products = Product::where('product_isActive', true)->get();
+        $this->command->info('Création des sorties existantes...');
 
-        if ($commerciaux->isEmpty() || $clients->isEmpty() || $products->isEmpty()) {
-            $this->command->warn('Veuillez d\'abord exécuter les seeders pour commerciaux, clients et produits');
-            return;
-        }
+        // Sortie 1
+        $sortie1 = Sortie::firstOrCreate(
+            ['numero_bl' => 'BL2508001'],
+            [
+            'numero_bl' => 'BL2508001',
+            'commercial_id' => 1,
+            'client_id' => 1,
+            'date_bl' => '2025-08-08',
+            'livreur_id' => 1,
+            'remise_speciale' => 0.00,
+            'remise_trimestrielle' => 0.00,
+            'valeur_ajoutee' => 0.00,
+            'retour' => 0.00,
+            'remise_es' => '0.00',
+            'client_gdg' => 0.00,
+            'total_general' => 2541.60,
+            'montant_total_final' => 2541.60,
+            'total_poids' => 132.00,
+            'montant_remise_especes' => 0.00,
+            'total_bl' => 2541.60,
+            'archived' => false,
+            'created_at' => '2025-08-08 16:57:16',
+            'updated_at' => '2025-08-08 16:57:26',
+        ]);
 
-        // Récupérer les livreurs existants ou créer des livreurs de test
-        $livreurs = \App\Models\Livreur::all();
+        // Produits de la sortie 1
+        SortieProduct::create([
+            'sortie_id' => $sortie1->id,
+            'product_id' => 155,
+            'ref_produit' => '80010072',
+            'prix_produit' => 141.60,
+            'quantite_produit' => 1,
+            'poids_produit' => 12.00,
+            'total_ligne' => 141.60,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 16:57:26',
+            'updated_at' => '2025-08-08 16:57:26',
+        ]);
 
-        if ($livreurs->isEmpty()) {
-            // Créer des livreurs de test si aucun n'existe
-            $livreurNoms = [
-                'Ahmed Benali',
-                'Mohamed Alami',
-                'Youssef Tazi',
-                'Hassan Idrissi',
-                'Omar Benjelloun',
-                'Khalid Fassi',
-                'Rachid Berrada',
-                'Abdelkader Lahlou'
-            ];
+        SortieProduct::create([
+            'sortie_id' => $sortie1->id,
+            'product_id' => 157,
+            'ref_produit' => '80020069',
+            'prix_produit' => 240.00,
+            'quantite_produit' => 10,
+            'poids_produit' => 120.00,
+            'total_ligne' => 2400.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 16:57:26',
+            'updated_at' => '2025-08-08 16:57:26',
+        ]);
 
-            foreach ($livreurNoms as $nom) {
-                \App\Models\Livreur::create([
-                    'nom' => $nom,
-                    'telephone' => '06' . rand(10000000, 99999999),
-                ]);
-            }
-            $livreurs = \App\Models\Livreur::all();
-        }
+        // Sortie 2
+        $sortie2 = Sortie::create([
+            'numero_bl' => 'BL2508002',
+            'commercial_id' => 1,
+            'client_id' => 1,
+            'date_bl' => '2025-08-08',
+            'livreur_id' => null,
+            'remise_speciale' => 0.00,
+            'remise_trimestrielle' => 0.00,
+            'valeur_ajoutee' => 0.00,
+            'retour' => 0.00,
+            'remise_es' => '1',
+            'client_gdg' => 0.00,
+            'total_general' => 90.40,
+            'montant_total_final' => 89.50,
+            'total_poids' => 9.00,
+            'montant_remise_especes' => 0.90,
+            'total_bl' => 89.50,
+            'archived' => false,
+            'created_at' => '2025-08-08 17:00:08',
+            'updated_at' => '2025-08-08 17:03:20',
+        ]);
 
-        // Créer 10 sorties de test (réduit pour éviter les problèmes de mémoire)
-        for ($i = 1; $i <= 10; $i++) {
-            $commercial = $commerciaux->random();
-            // Filtrer les clients par commercial, sinon prendre un client aléatoire
-            $clientsForCommercial = $clients->where('idCommercial', $commercial->id);
-            $client = $clientsForCommercial->isNotEmpty() ? $clientsForCommercial->random() : $clients->random();
+        // Produit de la sortie 2
+        SortieProduct::create([
+            'sortie_id' => $sortie2->id,
+            'product_id' => 154,
+            'ref_produit' => '80010059',
+            'prix_produit' => 90.40,
+            'quantite_produit' => 1,
+            'poids_produit' => 9.00,
+            'total_ligne' => 90.40,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 17:47:17',
+            'updated_at' => '2025-08-08 17:47:17',
+        ]);
 
-            // Générer un numéro BL unique
-            $numeroBl = 'BL-S-' . time() . '-' . str_pad($i, 3, '0', STR_PAD_LEFT);
+        // Sortie 3
+        $sortie3 = Sortie::create([
+            'numero_bl' => 'BL2508003',
+            'commercial_id' => 1,
+            'client_id' => 1,
+            'date_bl' => '2025-08-08',
+            'livreur_id' => null,
+            'remise_speciale' => 0.00,
+            'remise_trimestrielle' => 0.00,
+            'valeur_ajoutee' => 0.00,
+            'retour' => 0.00,
+            'remise_es' => '0.00',
+            'client_gdg' => 0.00,
+            'total_general' => 19914.00,
+            'montant_total_final' => 19914.00,
+            'total_poids' => 1515.00,
+            'montant_remise_especes' => 0.00,
+            'total_bl' => 19914.00,
+            'archived' => false,
+            'created_at' => '2025-08-08 18:32:06',
+            'updated_at' => '2025-08-08 18:32:06',
+        ]);
 
-            $sortie = Sortie::create([
-                'numero_bl' => $numeroBl,
-                'commercial_id' => $commercial->id,
-                'client_id' => $client->id,
-                'date_bl' => Carbon::now()->subDays(rand(0, 30)),
-                'livreur_id' => $livreurs->random()->id,
-                'remise_speciale' => rand(0, 50),
-                'remise_trimestrielle' => rand(0, 30),
-                'valeur_ajoutee' => rand(-10, 20),
-                'retour' => rand(0, 15),
-                'remise_es' => rand(0, 1) ? 'Oui' : null,
-                'client_gdg' => rand(0, 100) / 100,
-                'total_general' => 0, // Sera calculé après
-                'montant_total_final' => 0, // Sera calculé après
-                'total_poids' => 0, // Sera calculé après
-                'montant_remise_especes' => rand(0, 100),
-                'total_bl' => 0, // Sera calculé après
-            ]);
+        // Produits de la sortie 3
+        SortieProduct::create([
+            'sortie_id' => $sortie3->id,
+            'product_id' => 154,
+            'ref_produit' => '80010059',
+            'prix_produit' => 90.40,
+            'quantite_produit' => 15,
+            'poids_produit' => 135.00,
+            'total_ligne' => 1356.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:32:06',
+            'updated_at' => '2025-08-08 18:32:06',
+        ]);
 
-            // Ajouter 1 à 3 produits par sortie (réduit)
-            $numberOfProducts = rand(1, 3);
-            $selectedProducts = $products->random($numberOfProducts);
-            $totalSortie = 0;
-            $totalPoids = 0;
+        SortieProduct::create([
+            'sortie_id' => $sortie3->id,
+            'product_id' => 155,
+            'ref_produit' => '80010072',
+            'prix_produit' => 141.60,
+            'quantite_produit' => 5,
+            'poids_produit' => 60.00,
+            'total_ligne' => 708.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:32:06',
+            'updated_at' => '2025-08-08 18:32:06',
+        ]);
 
-            foreach ($selectedProducts as $product) {
-                $quantite = rand(1, 5);
-                $prixVente = $product->prix_vente_colis ?? rand(50, 200);
-                $poidsProduit = $product->poids_colis ?? rand(1, 10);
-                $totalLigne = $prixVente * $quantite;
-                $totalSortie += $totalLigne;
-                $totalPoids += $poidsProduit * $quantite;
+        SortieProduct::create([
+            'sortie_id' => $sortie3->id,
+            'product_id' => 156,
+            'ref_produit' => '80010073',
+            'prix_produit' => 154.50,
+            'quantite_produit' => 100,
+            'poids_produit' => 1200.00,
+            'total_ligne' => 15450.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:32:06',
+            'updated_at' => '2025-08-08 18:32:06',
+        ]);
 
-                SortieProduct::create([
-                    'sortie_id' => $sortie->id,
-                    'product_id' => $product->id,
-                    'ref_produit' => $product->product_Ref,
-                    'prix_produit' => $prixVente,
-                    'quantite_produit' => $quantite,
-                    'poids_produit' => $poidsProduit,
-                    'total_ligne' => $totalLigne,
-                ]);
-            }
+        SortieProduct::create([
+            'sortie_id' => $sortie3->id,
+            'product_id' => 157,
+            'ref_produit' => '80020069',
+            'prix_produit' => 240.00,
+            'quantite_produit' => 10,
+            'poids_produit' => 120.00,
+            'total_ligne' => 2400.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:32:06',
+            'updated_at' => '2025-08-08 18:32:06',
+        ]);
 
-            // Calculer les totaux avec les remises
-            $totalGeneral = $totalSortie;
-            $montantTotalFinal = $totalGeneral - $sortie->remise_speciale - $sortie->remise_trimestrielle + $sortie->valeur_ajoutee - $sortie->retour;
+        // Sortie 4
+        $sortie4 = Sortie::create([
+            'numero_bl' => 'BL2508004',
+            'commercial_id' => 1,
+            'client_id' => 3,
+            'date_bl' => '2025-08-08',
+            'livreur_id' => null,
+            'remise_speciale' => 0.00,
+            'remise_trimestrielle' => 0.00,
+            'valeur_ajoutee' => 0.00,
+            'retour' => 0.00,
+            'remise_es' => '0.00',
+            'client_gdg' => 0.00,
+            'total_general' => 51202.50,
+            'montant_total_final' => 51202.50,
+            'total_poids' => 4170.00,
+            'montant_remise_especes' => 0.00,
+            'total_bl' => 51202.50,
+            'archived' => false,
+            'created_at' => '2025-08-08 18:36:40',
+            'updated_at' => '2025-08-08 18:36:40',
+        ]);
 
-            // Mettre à jour tous les totaux
-            $sortie->update([
-                'total_general' => $totalGeneral,
-                'montant_total_final' => $montantTotalFinal,
-                'total_poids' => $totalPoids,
-                'total_bl' => $montantTotalFinal,
-            ]);
-        }
+        // Produits de la sortie 4
+        SortieProduct::create([
+            'sortie_id' => $sortie4->id,
+            'product_id' => 153,
+            'ref_produit' => '80000074',
+            'prix_produit' => 114.00,
+            'quantite_produit' => 60,
+            'poids_produit' => 720.00,
+            'total_ligne' => 6840.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:36:40',
+            'updated_at' => '2025-08-08 18:36:40',
+        ]);
 
-        $this->command->info('10 sorties créées avec succès');
+        SortieProduct::create([
+            'sortie_id' => $sortie4->id,
+            'product_id' => 163,
+            'ref_produit' => '80020100',
+            'prix_produit' => 135.75,
+            'quantite_produit' => 150,
+            'poids_produit' => 2250.00,
+            'total_ligne' => 20362.50,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:36:40',
+            'updated_at' => '2025-08-08 18:36:40',
+        ]);
+
+        SortieProduct::create([
+            'sortie_id' => $sortie4->id,
+            'product_id' => 157,
+            'ref_produit' => '80020069',
+            'prix_produit' => 240.00,
+            'quantite_produit' => 100,
+            'poids_produit' => 1200.00,
+            'total_ligne' => 24000.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:36:40',
+            'updated_at' => '2025-08-08 18:36:40',
+        ]);
+
+        // Sortie 5
+        $sortie5 = Sortie::create([
+            'numero_bl' => 'BL2508005',
+            'commercial_id' => 1,
+            'client_id' => 8,
+            'date_bl' => '2025-08-08',
+            'livreur_id' => null,
+            'remise_speciale' => 0.00,
+            'remise_trimestrielle' => 0.00,
+            'valeur_ajoutee' => 0.00,
+            'retour' => 0.00,
+            'remise_es' => '0.00',
+            'client_gdg' => 0.00,
+            'total_general' => 28380.00,
+            'montant_total_final' => 28380.00,
+            'total_poids' => 2720.00,
+            'montant_remise_especes' => 0.00,
+            'total_bl' => 28380.00,
+            'archived' => false,
+            'created_at' => '2025-08-08 18:37:28',
+            'updated_at' => '2025-08-08 18:37:28',
+        ]);
+
+        // Produits de la sortie 5
+        SortieProduct::create([
+            'sortie_id' => $sortie5->id,
+            'product_id' => 152,
+            'ref_produit' => '80000076',
+            'prix_produit' => 77.00,
+            'quantite_produit' => 80,
+            'poids_produit' => 720.00,
+            'total_ligne' => 6160.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:37:28',
+            'updated_at' => '2025-08-08 18:37:28',
+        ]);
+
+        SortieProduct::create([
+            'sortie_id' => $sortie5->id,
+            'product_id' => 162,
+            'ref_produit' => '80020057',
+            'prix_produit' => 111.10,
+            'quantite_produit' => 200,
+            'poids_produit' => 2000.00,
+            'total_ligne' => 22220.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:37:28',
+            'updated_at' => '2025-08-08 18:37:28',
+        ]);
+
+        // Sortie 6
+        $sortie6 = Sortie::create([
+            'numero_bl' => 'BL2508006',
+            'commercial_id' => 1,
+            'client_id' => 2,
+            'date_bl' => '2025-08-08',
+            'livreur_id' => null,
+            'remise_speciale' => 0.00,
+            'remise_trimestrielle' => 0.00,
+            'valeur_ajoutee' => 0.00,
+            'retour' => 0.00,
+            'remise_es' => '0.00',
+            'client_gdg' => 0.00,
+            'total_general' => 13824.00,
+            'montant_total_final' => 13824.00,
+            'total_poids' => 600.00,
+            'montant_remise_especes' => 0.00,
+            'total_bl' => 13824.00,
+            'archived' => false,
+            'created_at' => '2025-08-08 18:39:48',
+            'updated_at' => '2025-08-08 18:39:48',
+        ]);
+
+        // Produits de la sortie 6
+        SortieProduct::create([
+            'sortie_id' => $sortie6->id,
+            'product_id' => 146,
+            'ref_produit' => '',
+            'prix_produit' => 115.20,
+            'quantite_produit' => 20,
+            'poids_produit' => 120.00,
+            'total_ligne' => 2304.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:39:48',
+            'updated_at' => '2025-08-08 18:39:48',
+        ]);
+
+        SortieProduct::create([
+            'sortie_id' => $sortie6->id,
+            'product_id' => 147,
+            'ref_produit' => '80120000',
+            'prix_produit' => 115.20,
+            'quantite_produit' => 100,
+            'poids_produit' => 480.00,
+            'total_ligne' => 11520.00,
+            'use_achat_price' => false,
+            'created_at' => '2025-08-08 18:39:48',
+            'updated_at' => '2025-08-08 18:39:48',
+        ]);
+
+        $this->command->info('6 sorties créées avec succès');
     }
 }

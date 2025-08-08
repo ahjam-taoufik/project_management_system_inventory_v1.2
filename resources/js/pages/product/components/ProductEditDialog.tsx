@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import toast from 'react-hot-toast';
 import type { Product, Brand, Category } from '@/types';
+import React from 'react'; // Added missing import
 
 interface ProductEditDialogProps {
     product: Product | null;
@@ -100,9 +101,27 @@ export default function ProductEditDialog({
     };
 
     // Filtrer les catégories par marque sélectionnée
-    const filteredCategories = data.brand_id
-        ? categories.filter(cat => cat.brand_id.toString() === data.brand_id)
-        : categories;
+    const filteredCategories = React.useMemo(() => {
+        // Vérifications de sécurité
+        if (!categories || !Array.isArray(categories) || categories.length === 0) {
+            return [];
+        }
+
+        if (!data.brand_id) {
+            return categories;
+        }
+
+        // Filtrage avec vérifications
+        return categories.filter(cat => {
+            if (!cat || typeof cat.brand_id === 'undefined' || cat.brand_id === null) {
+                return false;
+            }
+
+            const catBrandId = String(cat.brand_id);
+            const selectedBrandId = String(data.brand_id);
+            return catBrandId === selectedBrandId;
+        });
+    }, [categories, data.brand_id]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>

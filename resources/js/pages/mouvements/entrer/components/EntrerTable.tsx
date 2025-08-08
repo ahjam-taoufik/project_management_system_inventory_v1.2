@@ -158,100 +158,111 @@ export function EntrerTable<TData extends Entrer, TValue>({
                   </TableRow>
                   {row.getIsExpanded() && (
                     <TableRow key={`${row.id}-expanded`}>
-                      <TableCell colSpan={columns.length} className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-                        <div className="p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <h4 className="font-semibold text-gray-900 text-lg">
-                              Produits de ce BL ({row.original.product_count} produit{row.original.product_count > 1 ? 's' : ''})
-                            </h4>
-                          </div>
-                          <div className="grid gap-4">
-                            {row.original.products?.map((product: EntrerProduct, idx, arr) => {
-                              const prix = product.prix_achat_produit || 0;
-                              const quantite = product.quantite_produit || 0;
-                              const total = prix * quantite;
-                              // Produit offert : prix = 0
-                              const isOffered = product.prix_achat_produit !== undefined && product.prix_achat_produit !== null && Number(product.prix_achat_produit) === 0;
-                              // Produit promotionnel : il existe dans le même BL un produit offert (prix=0) avec la même ref_produit
-                              const isPromotion = !isOffered && arr.some(p => p.ref_produit === product.ref_produit && Number(p.prix_achat_produit) === 0);
+                      <TableCell colSpan={columns.length} className="p-0">
+                        <div className="bg-gray-50 p-4">
+                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b w-12">N°</th>
+                                  <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Produit</th>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Référence</th>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Quantité</th>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Prix unit.</th>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Total ligne</th>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Manque</th>
+                                  <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Statut</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(row.original as Entrer).products
+                                  .sort((a, b) => b.product.product_libelle.localeCompare(a.product.product_libelle))
+                                  .map((product, index) => {
+                                    const prix = product.prix_achat_produit || 0;
+                                    const quantite = product.quantite_produit || 0;
+                                    const total = prix * quantite;
+                                    // Produit offert : prix = 0
+                                    const isOffered = product.prix_achat_produit !== undefined && product.prix_achat_produit !== null && Number(product.prix_achat_produit) === 0;
+                                    // Suppression de la logique promotionnelle
+                                    const isPromotion = false;
 
-                              return (
-                                <div
-                                  key={product.id}
-                                  className={cn(
-                                    "rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 relative",
-                                    isOffered
-                                      ? "bg-blue-100 border-blue-400"
-                                      : "bg-white border-gray-200"
-                                  )}
-                                >
-                                  {/* Badge Offert (orange, à droite) */}
-                                  {isOffered && (
-                                    <Badge
-                                      variant="outline"
-                                      className="absolute top-2 right-2 text-xs bg-orange-100 text-orange-800 border-orange-200"
-                                    >
-                                      Offert
-                                    </Badge>
-                                  )}
-                                  {/* Badge Promotion (orange, à droite, mais priorité à Offert si les deux) */}
-                                  {isPromotion && !isOffered && (
-                                    <Badge
-                                      variant="outline"
-                                      className="absolute top-2 right-2 text-xs bg-orange-100 text-orange-800 border-orange-200"
-                                    >
-                                      Promotion
-                                    </Badge>
-                                  )}
-                                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                    <div className="space-y-1">
-                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Produit</span>
-                                      <div className="text-sm font-semibold text-gray-900">
-                                        {product.product?.product_libelle || 'N/A'}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        Ref: {product.ref_produit || 'N/A'}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Prix</span>
-                                      <div className="text-sm font-semibold text-gray-900">
-                                        {product.prix_achat_produit ? `${formatNumber(product.prix_achat_produit.toString())} DH` : 'N/A'}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Quantité</span>
-                                      <div className="text-sm font-semibold text-gray-900">
-                                        {product.quantite_produit || 'N/A'}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total</span>
-                                      <div className="text-sm font-semibold text-green-600">
-                                        {(String(product.prix_achat_produit) !== '' && String(product.quantite_produit) !== '')
-                                          ? `${formatNumber(total.toString())} DH`
-                                          : 'N/A'}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Manque</span>
-                                      <div className="text-sm">
-                                        {product.manque ? (
-                                          <Badge variant="destructive" className="text-xs px-2 py-1">
-                                            {product.manque.toString()}
-                                          </Badge>
-                                        ) : (
-                                          <Badge variant="default" className="text-xs px-2 py-1 bg-green-100 text-green-800 hover:bg-green-100">
-                                            Aucun
-                                          </Badge>
+                                    return (
+                                      <tr
+                                        key={`${row.id}-product-${index}`}
+                                        className={cn(
+                                          "hover:bg-gray-50",
+                                          isOffered ? "bg-orange-50" : ""
                                         )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                      >
+                                        <td className="px-3 py-2 text-center border-b font-medium text-gray-600">
+                                          {index + 1}
+                                        </td>
+                                        <td className="px-3 py-2 border-b">
+                                          <div className="font-medium text-gray-900">
+                                            {product.product?.product_libelle || 'N/A'}
+                                          </div>
+                                        </td>
+                                        <td className="px-3 py-2 text-center border-b text-gray-600">
+                                          {product.ref_produit || 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-2 text-center border-b font-semibold">
+                                          {product.quantite_produit || 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-2 text-center border-b font-semibold">
+                                          {product.prix_achat_produit ? `${formatNumber(product.prix_achat_produit.toString())} DH` : 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-2 text-center border-b font-bold text-green-700">
+                                          {(String(product.prix_achat_produit) !== '' && String(product.quantite_produit) !== '')
+                                            ? `${formatNumber(total.toString())} DH`
+                                            : 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-2 text-center border-b">
+                                          {product.manque ? (
+                                            <Badge variant="destructive" className="text-xs px-2 py-1">
+                                              {product.manque.toString()}
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant="default" className="text-xs px-2 py-1 bg-green-100 text-green-800 hover:bg-green-100">
+                                              Aucun
+                                            </Badge>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-2 text-center border-b">
+                                          {/* Badge Offert uniquement */}
+                                          {isOffered && (
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs bg-orange-100 text-orange-800 border-orange-200 px-2 py-1"
+                                            >
+                                              Offert
+                                            </Badge>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                {/* Ligne du total général */}
+                                <tr className="bg-blue-50 border-t-2 border-blue-200">
+                                  <td colSpan={5} className="px-3 py-3 text-right font-bold text-blue-900">
+                                    Total Général :
+                                  </td>
+                                  <td className="px-3 py-3 text-center font-bold text-blue-900 text-lg">
+                                    {(() => {
+                                      const entrer = row.original as Entrer;
+                                      // Calculer le vrai total des lignes de produits
+                                      const totalLignes = entrer.products.reduce((total, product) => {
+                                        const prix = product.prix_achat_produit || 0;
+                                        const quantite = product.quantite_produit || 0;
+                                        return total + (prix * quantite);
+                                      }, 0);
+                                      return `${formatNumber(totalLignes.toString())} DH`;
+                                    })()}
+                                  </td>
+                                  <td className="px-3 py-3 border-b"></td>
+                                  <td className="px-3 py-3 border-b"></td>
+                                </tr>
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       </TableCell>

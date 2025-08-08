@@ -44,6 +44,19 @@ class SortieProductObserver
      */
     public function deleted(SortieProduct $sortieProduct): void
     {
+        // Log pour déboguer
+        \Illuminate\Support\Facades\Log::info("SortieProductObserver::deleted - Produit: {$sortieProduct->product_id}, Quantité: {$sortieProduct->quantite_produit}");
+
+        // Vérifier si la sortie existe encore
+        // Si la sortie existe encore, c'est probablement une suppression dans le contexte d'une suppression de sortie
+        // Dans ce cas, la remise en stock est gérée manuellement dans le contrôleur
+        if ($sortieProduct->sortie && $sortieProduct->sortie->exists) {
+            \Illuminate\Support\Facades\Log::info("SortieProductObserver::deleted - Sortie existe encore, remise en stock gérée par le contrôleur");
+            return;
+        }
+
+        // Si la sortie n'existe plus, c'est une vraie suppression, remettre le stock en place
+        \Illuminate\Support\Facades\Log::info("SortieProductObserver::deleted - Sortie supprimée, remise en stock par l'observer");
         $this->updateStock($sortieProduct, 'increase');
     }
 
@@ -71,6 +84,8 @@ class SortieProductObserver
         $stock = Stock::where('product_id', $sortieProduct->product_id)->first();
 
         if ($stock) {
+            \Illuminate\Support\Facades\Log::info("SortieProductObserver::updateStock - Avant {$operation} - Stock disponible: {$stock->stock_disponible}, Quantité sortie: {$stock->quantite_totale_sortie}");
+
             if ($operation === 'decrease') {
                 // Diminuer le stock lors d'une sortie
                 $stock->decrement('stock_disponible', $sortieProduct->quantite_produit);
@@ -81,6 +96,11 @@ class SortieProductObserver
                 $stock->increment('stock_disponible', $sortieProduct->quantite_produit);
                 $stock->decrement('quantite_totale_sortie', $sortieProduct->quantite_produit);
             }
+
+            $stock->refresh();
+            \Illuminate\Support\Facades\Log::info("SortieProductObserver::updateStock - Après {$operation} - Stock disponible: {$stock->stock_disponible}, Quantité sortie: {$stock->quantite_totale_sortie}");
+        } else {
+            \Illuminate\Support\Facades\Log::warning("SortieProductObserver::updateStock - Stock non trouvé pour le produit {$sortieProduct->product_id}");
         }
     }
 }

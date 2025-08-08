@@ -7,6 +7,7 @@ use App\Models\Secteur;
 use App\Models\Ville;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Log;
 
 class SecteurController extends Controller
 {
@@ -55,10 +56,15 @@ class SecteurController extends Controller
                 'idVille' => $request->validated()['idVille'],
             ]);
 
-            return redirect()->route('secteurs.index')->with('success', 'Secteur créé avec succès');
+            if ($secteur) {
+                return redirect()->route('secteurs.index')->with('success', 'Secteur créé avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Impossible de créer le secteur. Veuillez réessayer.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la création: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur SecteurController::store: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la création du secteur.')->withInput();
         }
     }
 
@@ -96,16 +102,21 @@ class SecteurController extends Controller
 
         try {
             $validatedData = $request->validated();
-            
-            $secteur->update([
+
+            $updated = $secteur->update([
                 'nameSecteur' => $validatedData['nameSecteur'],
                 'idVille' => $validatedData['idVille']
             ]);
 
-                return redirect()->route('secteurs.index')->with('success', 'Secteur mis à jour avec succès.');
+            if ($updated) {
+                return redirect()->route('secteurs.index')->with('success', 'Secteur mis à jour avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Aucune modification effectuée sur le secteur.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur SecteurController::update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la mise à jour du secteur.')->withInput();
         }
     }
 
@@ -120,11 +131,21 @@ class SecteurController extends Controller
         }
 
         try {
-            $secteur->delete();
-            return redirect()->route('secteurs.index')->with('success', 'Secteur supprimé avec succès');
+            if ($secteur) {
+                $deleted = $secteur->delete();
+
+                if ($deleted) {
+                    return redirect()->route('secteurs.index')->with('success', 'Secteur supprimé avec succès');
+                }
+
+                return redirect()->back()->with('error', 'Impossible de supprimer le secteur. Veuillez réessayer.');
+            }
+
+            return redirect()->back()->with('error', 'Secteur introuvable.');
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la suppression: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur SecteurController::destroy: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la suppression du secteur.');
         }
     }
 }

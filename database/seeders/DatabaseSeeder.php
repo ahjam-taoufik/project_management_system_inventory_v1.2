@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             TransporteurSeeder::class,
             AssignSortiePermissionsSeeder::class,
+            SortieSeeder::class,
             // SortieSeeder::class,
         ]);
 
@@ -38,12 +39,13 @@ class DatabaseSeeder extends Seeder
         $allPermissions = Permission::all();
         $superAdminRole->syncPermissions($allPermissions);
 
-        // 4. Créer le super utilisateur
-        $superUser = User::firstOrCreate(
+        // 4. Créer ou mettre à jour le super utilisateur
+        $superUser = User::updateOrCreate(
             ['email' => 'superadmin@admin.com'],
             [
                 'name' => 'Super Admin',
                 'password' => bcrypt('password'),
+                'email_verified_at' => now(),
             ]
         );
 

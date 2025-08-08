@@ -52,7 +52,8 @@ interface SortieEditFormData {
     montant_total_final: number;
     total_poids: number;
     montant_remise_especes: number;
-    [key: string]: string | number | Array<{
+    archived: boolean;
+    [key: string]: string | number | boolean | Array<{
         product_id: string;
         quantite_produit: number;
         prix_produit: number;
@@ -96,6 +97,7 @@ export default function SortieEditDialog({
         montant_total_final: sortie.montant_total_final,
         total_poids: sortie.total_poids,
         montant_remise_especes: sortie.montant_remise_especes,
+        archived: sortie.archived,
     });
 
     // Initialiser les produits et le type de prix quand le modal s'ouvre
@@ -130,6 +132,7 @@ export default function SortieEditDialog({
                 prix_produit: product.prix_produit,
                 poids_produit: product.poids_produit,
             }));
+            console.log('Produits initialisés:', initialProducts);
             setSelectedProducts(initialProducts);
             setIsInitialized(true);
             console.log('=== FIN DÉBOGAGE ===');
@@ -138,31 +141,55 @@ export default function SortieEditDialog({
         }
     }, [open, sortie]);
 
-    // Effet pour mettre à jour les prix seulement quand l'utilisateur change manuellement le switch
+
+
+    // Effet pour pré-remplir les champs remise_es et client_gdg quand un client est sélectionné
     React.useEffect(() => {
-        // Ne recalculer que si l'initialisation est terminée et que l'utilisateur a changé le switch
-        if (isInitialized && selectedProducts.length > 0 && selectedProducts.some(p => p.product_id)) {
+        if (data.client_id) {
+            const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
+            if (selectedClient) {
+                // Ne pré-remplir que si les champs sont vides (première sélection)
+                if (data.remise_es === '' || data.remise_es === null || data.remise_es === undefined) {
+                    const remiseEsValue = selectedClient.remise_special ? selectedClient.remise_special.toString() : '';
+                    setData('remise_es', remiseEsValue);
+                }
+
+                if (data.client_gdg === '' || data.client_gdg === null || data.client_gdg === undefined) {
+                    const clientGdgValue = selectedClient.pourcentage ? selectedClient.pourcentage.toString() : '';
+                    setData('client_gdg', clientGdgValue);
+                }
+            }
+        } else {
+            // Si aucun client n'est sélectionné, vider les champs et réinitialiser les états
+            setData('remise_es', '');
+            setData('client_gdg', '');
+        }
+    }, [data.client_id, clients]);
+
+    // Effet pour recalculer les prix unitaires quand le type de prix change
+    React.useEffect(() => {
+        if (isInitialized) {
             setSelectedProducts(prevProducts =>
                 prevProducts.map(product => {
                     if (product.product_id) {
                         const productData = products.find(p => p.id.toString() === product.product_id);
                         if (productData) {
-                            // Récupérer le pourcentage client G/DG (peut être 0 si aucun client sélectionné)
+                            // Récupérer le pourcentage client G/DG
                             const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
-                            const pourcentageClient = selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0;
+                            const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
 
-                            // Calculer le prix de base avec vérification et conversion en nombre
+                            // Calculer le nouveau prix de base selon le type de prix
                             const prixDeBase = usePurchasePrice
                                 ? Number(productData.prix_achat_colis || 0)
                                 : Number(productData.prix_vente_colis || 0);
 
-                            // Appliquer le pourcentage au prix unitaire (même si pourcentageClient est 0)
-                            const prixAvecPourcentage = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                            // Appliquer le pourcentage client G/DG
+                            const newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
 
                             return {
                                 ...product,
-                                prix_produit: prixAvecPourcentage,
-                                poids_produit: productData.product_Poids || product.poids_produit || 0,
+                                prix_produit: newPrice,
+                                poids_produit: productData.product_Poids ? productData.product_Poids * product.quantite_produit : product.poids_produit,
                             };
                         }
                     }
@@ -170,7 +197,7 @@ export default function SortieEditDialog({
                 })
             );
         }
-    }, [usePurchasePrice, products, data.client_id, isInitialized]);
+    }, [usePurchasePrice, products, data.client_id, data.client_gdg, isInitialized]);
 
     const addProduct = () => {
         setSelectedProducts([
@@ -214,22 +241,23 @@ export default function SortieEditDialog({
         if (field === 'product_id') {
             const selectedProduct = products.find((p) => p.id.toString() === value);
             if (selectedProduct) {
-                // Récupérer le pourcentage client G/DG (peut être 0 si aucun client sélectionné)
+                // Quand on change de produit, TOUJOURS recalculer le prix avec le nouveau produit
+                // Récupérer le pourcentage client G/DG (priorité à la valeur saisie)
                 const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
-                const pourcentageClient = selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0;
+                const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
 
                 // Calculer le prix de base avec vérification et conversion en nombre
                 const prixDeBase = usePurchasePrice
                     ? Number(selectedProduct.prix_achat_colis || 0)
                     : Number(selectedProduct.prix_vente_colis || 0);
 
-                // Appliquer le pourcentage au prix unitaire (même si pourcentageClient est 0)
-                const prixAvecPourcentage = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                // Appliquer le pourcentage au prix unitaire
+                const newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
 
                 updatedProducts[index] = {
                     ...updatedProducts[index],
                     product_id: value as string,
-                    prix_produit: prixAvecPourcentage,
+                    prix_produit: newPrice,
                     poids_produit: selectedProduct.product_Poids ? selectedProduct.product_Poids * updatedProducts[index].quantite_produit : 0,
                 };
             }
@@ -445,6 +473,8 @@ export default function SortieEditDialog({
                                         <span className={`text-xs font-medium ${usePurchasePrice ? 'text-red-600 font-bold' : 'text-gray-700'}`}>Achat</span>
                                     </div>
                                 </div>
+
+
                             </CardContent>
                         </Card>
 
@@ -763,7 +793,15 @@ export default function SortieEditDialog({
                                         <Label className="text-sm font-medium text-gray-700">Quantité</Label>
                                     </div>
                                     <div className="col-span-2">
-                                        <Label className="text-base font-extrabold text-gray-700">Prix</Label>
+                                        <Label className="text-base font-extrabold text-gray-700">
+                                            Prix {(() => {
+                                                const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
+                                                const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
+                                                return pourcentageClient > 0 && (
+                                                    <span className="text-orange-600 ml-1 font-extrabold">(+{pourcentageClient}%)</span>
+                                                );
+                                            })()}
+                                        </Label>
                                     </div>
                                     <div className="col-span-2">
                                         <Label className="text-sm font-medium text-gray-700">Total</Label>

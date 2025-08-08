@@ -22,7 +22,7 @@ class CategorySeeder extends Seeder
           DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
           $categories = [
-            ['category_name' => 'POUDRE MAIN', 'brand_id' => 1],
+            ['category_name' => 'POUDRE MAIN', 'brand_id' => 2],
             ['category_name' => 'PATE', 'brand_id' => 1],
             ['category_name' => 'POUDRE MATIC', 'brand_id' => 1],
             ['category_name' => 'LIQUIDE VAISSELLE', 'brand_id' => 1],

@@ -1321,3 +1321,105 @@ onClick={(e) => {
 - Exposer le plan d’action avant toute modification majeure.
 - Communiquer chaque étape et chaque correction apportée.
 - Documenter systématiquement toute action structurante. 
+
+## Testing Patterns
+
+### ⚠️ CRITICAL: Always Use Temporary Files for Testing
+- **Problem** : PowerShell escape character issues with complex commands
+- **Solution** : Create temporary PHP files for isolated testing
+- **Pattern** : `test_filename.php` → execute → delete
+- **Example** : `test_sortie_complete.php` for complex logic testing
+
+### 🚀 OPTIMIZED: Factory + Real Data for Maximum Performance
+- **Problem** : Seeders are slow for large datasets (50.01s)
+- **Solution** : Use Factory with real data extracted from seeders
+- **Pattern** : `Model::factory()->create()` with real data
+- **Example** : `Ville::factory()->create()` with real Moroccan cities
+- **Performance** : 93% faster (3.70s vs 50.01s)
+- **Advantages** :
+  - ⚡ **Ultra-fast execution** : No need to load full seeders
+  - 🎯 **Targeted testing** : Only create what's needed
+  - 📝 **Easy maintenance** : Simple to modify test data
+  - ✅ **Real data** : Extracted from existing seeders
+
+### 🏭 Factory Creation Pattern
+```php
+// ✅ OPTIMIZED FACTORY PATTERN
+class VilleFactory extends Factory
+{
+    public function definition(): array
+    {
+        // Real data extracted from VilleSeeder
+        $realVilles = ['INZEGANE', 'AGADIR', 'CASABLANCA', ...];
+        
+        return [
+            'nameVille' => $this->faker->unique()->randomElement($realVilles),
+        ];
+    }
+}
+```
+
+### 🚨 CRITICAL: Never Use User::factory() in Tests
+- **Rule** : Never use `User::factory()` in tests
+- **Reason** : Permission and consistency issues
+- **Solution** : Use existing user or create specific user
+- **Pattern** : `User::where('email', 'superadmin@admin.com')->first()`
+
+### 📝 CRITICAL: Never Modify Existing Business Code
+- **Rule** : Never modify routes, controllers, frontend, or events for tests
+- **Goal** : Create ONLY tests
+- **Pattern** : Test existing code without modifying it
+
+### 🗄️ CRITICAL: Never Modify Other Tables (Only Target Table)
+- **Rule** : Never modify other tables than the one concerned by the test
+- **Goal** : Isolated and independent tests
+- **Pattern** : Use `DatabaseTransactions` for automatic rollback
+- **Example** : Test `Ville` → only touch `villes` table
+- **Advantage** : Avoid side effects and conflicts between tests
+
+### 🎯 Optimized Test Structure Pattern
+```php
+#[Test] // PHPUnit 12 attributes (no warnings)
+public function test_name()
+{
+    // ✅ OPTIMIZED: Factory + Real Data (3.70s)
+    $user = User::where('email', 'superadmin@admin.com')->first();
+    $ville = Ville::factory()->create(); // Real Moroccan city
+    
+    // Test logic
+    $response = $this->actingAs($user)->get('/route');
+    
+    // Assertions
+    $response->assertStatus(200);
+}
+```
+
+### 📊 Performance Comparison
+| Approach | Duration | Improvement |
+|----------|----------|-------------|
+| **Full Seeders** | 50.01s | - |
+| **Factory + Seeders** | 25.19s | 50% faster |
+| **Factory Only** | **3.70s** | **93% faster** |
+
+### 🔄 Factory Requirements
+- ✅ **VilleFactory** - Real Moroccan cities
+- ✅ **UserFactory** - Fixed super admin credentials
+- 🔄 **SecteurFactory** - Real sectors with ville relations
+- 🔄 **ClientFactory** - Real clients with all relations
+- 🔄 **CommercialFactory** - Real commercials
+
+### 📋 Test Creation Checklist
+- [ ] Consult project memory
+- [ ] Identify entity to test
+- [ ] Check required permissions
+- [ ] Create complete CRUD tests
+- [ ] Add validation tests
+- [ ] Add permission tests
+- [ ] Verify performance (< 5s total)
+- [ ] Update documentation
+
+### 🎯 Performance Goals
+- **Individual test** : < 1 second
+- **Complete suite** : < 10 seconds
+- **Code coverage** : > 90%
+- **Assertions** : At least 3 per test 

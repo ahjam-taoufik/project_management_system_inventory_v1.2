@@ -30,6 +30,7 @@ class Sortie extends Model
         'total_poids',
         'montant_remise_especes',
         'total_bl',
+        'archived',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class Sortie extends Model
         'total_poids' => 'decimal:2',
         'montant_remise_especes' => 'decimal:2',
         'total_bl' => 'decimal:2',
+        'archived' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

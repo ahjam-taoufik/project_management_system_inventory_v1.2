@@ -35,6 +35,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
         "livreur": false, // Décocher la colonne livreur par défaut
+        "total_poids": false, // Décocher la colonne poids total par défaut
     });
     const [rowSelection, setRowSelection] = useState({});
 
@@ -130,6 +131,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                         <table className="w-full text-sm">
                                                             <thead className="bg-gray-100">
                                                                 <tr>
+                                                                    <th className="px-3 py-2 text-center font-medium text-gray-700 border-b w-12">N°</th>
                                                                     <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Produit</th>
                                                                     <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Référence</th>
                                                                     <th className="px-3 py-2 text-center font-medium text-gray-700 border-b">Quantité</th>
@@ -139,8 +141,13 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {(row.original as Sortie).products.map((product, index) => (
+                                                                {(row.original as Sortie).products
+                                                                    .sort((a, b) => b.product.product_libelle.localeCompare(a.product.product_libelle))
+                                                                    .map((product, index) => (
                                                                     <tr key={`${row.id}-product-${index}`} className="hover:bg-gray-50">
+                                                                        <td className="px-3 py-2 text-center border-b font-medium text-gray-600">
+                                                                            {index + 1}
+                                                                        </td>
                                                                         <td className="px-3 py-2 border-b">
                                                                             <div className="font-medium text-gray-900">
                                                                                 {product.product.product_libelle}
@@ -165,7 +172,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                 ))}
                                                                 {/* Ligne du total général */}
                                                                 <tr className="bg-blue-50 border-t-2 border-blue-200">
-                                                                    <td colSpan={5} className="px-3 py-3 text-right font-bold text-blue-900">
+                                                                    <td colSpan={6} className="px-3 py-3 text-right font-bold text-blue-900">
                                                                         Total Général :
                                                                     </td>
                                                                     <td className="px-3 py-3 text-center font-bold text-blue-900 text-lg">
@@ -190,7 +197,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                     const montantRemiseEs = (totalLignes * remiseEs) / 100;
                                                                     return remiseEs > 0 ? (
                                                                         <tr className="bg-gray-50">
-                                                                            <td colSpan={5} className="px-3 py-1 text-right font-medium text-gray-700">
+                                                                            <td colSpan={6} className="px-3 py-1 text-right font-medium text-gray-700">
                                                                                 Remise ES ({remiseEs}%) :
                                                                             </td>
                                                                             <td className="px-3 py-1 text-center font-semibold text-red-600">
@@ -202,7 +209,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                 {/* Remise Spéciale */}
                                                                 {Number((row.original as Sortie).remise_speciale || 0) > 0 && (
                                                                     <tr className="bg-gray-50">
-                                                                        <td colSpan={5} className="px-3 py-1 text-right font-medium text-gray-700">
+                                                                        <td colSpan={6} className="px-3 py-1 text-right font-medium text-gray-700">
                                                                             Remise Spéciale :
                                                                         </td>
                                                                         <td className="px-3 py-1 text-center font-semibold text-red-600">
@@ -213,7 +220,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                 {/* Remise Trimestrielle */}
                                                                 {Number((row.original as Sortie).remise_trimestrielle || 0) > 0 && (
                                                                     <tr className="bg-gray-50">
-                                                                        <td colSpan={5} className="px-3 py-1 text-right font-medium text-gray-700">
+                                                                        <td colSpan={6} className="px-3 py-1 text-right font-medium text-gray-700">
                                                                             Remise Trimestrielle :
                                                                         </td>
                                                                         <td className="px-3 py-1 text-center font-semibold text-red-600">
@@ -224,7 +231,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                 {/* Valeur Ajoutée */}
                                                                 {Number((row.original as Sortie).valeur_ajoutee || 0) !== 0 && (
                                                                     <tr className="bg-gray-50">
-                                                                        <td colSpan={5} className="px-3 py-1 text-right font-medium text-gray-700">
+                                                                        <td colSpan={6} className="px-3 py-1 text-right font-medium text-gray-700">
                                                                             Valeur Ajoutée :
                                                                         </td>
                                                                         <td className={`px-3 py-1 text-center font-semibold ${Number((row.original as Sortie).valeur_ajoutee || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -235,7 +242,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                 {/* Retour */}
                                                                 {Number((row.original as Sortie).retour || 0) !== 0 && (
                                                                     <tr className="bg-gray-50">
-                                                                        <td colSpan={5} className="px-3 py-1 text-right font-medium text-gray-700">
+                                                                        <td colSpan={6} className="px-3 py-1 text-right font-medium text-gray-700">
                                                                             Retour :
                                                                         </td>
                                                                         <td className={`px-3 py-1 text-center font-semibold ${Number((row.original as Sortie).retour || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -268,7 +275,7 @@ export function SortieTable<TData, TValue>({ columns, data }: SortieTableProps<T
                                                                     // Afficher le montant final seulement s'il y a des remises ou si le montant final est différent du total général
                                                                     return (hasRemises || Math.abs(totalLignes - montantFinalCalcule) > 0.01) ? (
                                                                         <tr className="bg-green-50 border-t-2 border-green-200">
-                                                                            <td colSpan={5} className="px-3 py-3 text-right font-bold text-green-900">
+                                                                            <td colSpan={6} className="px-3 py-3 text-right font-bold text-green-900">
                                                                                 Montant Final :
                                                                             </td>
                                                                             <td className="px-3 py-3 text-center font-bold text-green-900 text-lg">

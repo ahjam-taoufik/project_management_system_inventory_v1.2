@@ -54,6 +54,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/sortie-product-details/{productId}', [App\Http\Controllers\SortieController::class, 'getProductDetails'])->name('api.sortie-product-details');
     Route::get('/api/check-sortie-bl-exists/{numeroBl}', [App\Http\Controllers\SortieController::class, 'checkBlExists'])->name('api.check-sortie-bl-exists');
     Route::get('/api/clients-by-commercial/{commercialId}', [App\Http\Controllers\SortieController::class, 'getClientsByCommercial'])->name('api.clients-by-commercial');
+    Route::get('/api/next-bl-number', [App\Http\Controllers\SortieController::class, 'getNextBlNumber'])->name('api.next-bl-number');
+    Route::patch('/api/sorties/{sortie}/toggle-archived', [App\Http\Controllers\SortieController::class, 'toggleArchived'])->name('api.sorties.toggle-archived');
 });
 
 require __DIR__.'/settings.php';

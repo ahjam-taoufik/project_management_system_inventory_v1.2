@@ -36,6 +36,7 @@ export interface Sortie {
     product_count: number;
     products: SortieProduct[];
     total_bl?: number;
+    archived: boolean;
     updated_at: string;
 }
 

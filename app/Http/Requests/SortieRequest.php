@@ -31,6 +31,7 @@ class SortieRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
+                'regex:/^BL\d{7}$/', // Format: BLYYMMNNN (BL + 2 chiffres année + 2 chiffres mois + 3 chiffres numéro)
                 Rule::unique('sorties', 'numero_bl')->ignore($sortieId),
             ],
             'commercial_id' => 'required|exists:commerciaux,id',
@@ -47,6 +48,7 @@ class SortieRequest extends FormRequest
             'montant_total_final' => 'nullable|numeric|min:0',
             'total_poids' => 'nullable|numeric|min:0',
             'montant_remise_especes' => 'nullable|numeric|min:0',
+            'archived' => 'nullable|boolean',
             'products' => 'required|array|min:1',
             'products.*.product_id' => 'required|exists:products,id',
             'products.*.quantite_produit' => 'required|numeric|min:0.01',
@@ -63,6 +65,7 @@ class SortieRequest extends FormRequest
     {
         return [
             'numero_bl.required' => 'Le numéro de BL est obligatoire.',
+            'numero_bl.regex' => 'Le numéro de BL doit être au format BLYYMMNNN (ex: BL2508001).',
             'numero_bl.unique' => 'Ce numéro de BL existe déjà.',
             'commercial_id.required' => 'Le commercial est obligatoire.',
             'commercial_id.exists' => 'Le commercial sélectionné n\'existe pas.',

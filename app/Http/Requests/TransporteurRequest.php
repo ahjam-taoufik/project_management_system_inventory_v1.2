@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Helpers\ValidationHelper;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class TransporteurRequest extends FormRequest
 {
@@ -27,7 +29,7 @@ class TransporteurRequest extends FormRequest
             'conducteur_name' => ['required', 'string', 'max:255'],
             'vehicule_matricule' => ['required', 'string', 'max:20', 'unique:transporteurs,vehicule_matricule,' . $this->transporteur?->id],
             'conducteur_cin' => ['required', 'string', 'max:20', 'unique:transporteurs,conducteur_cin,' . $this->transporteur?->id],
-            'conducteur_telephone' => ['required', 'string', 'max:20'],
+            'conducteur_telephone' => ValidationHelper::telephoneRules('conducteur_telephone', 'transporteurs', $this->transporteur?->id),
             'vehicule_type' => ['required', 'string', 'max:100'],
         ];
     }
@@ -52,9 +54,7 @@ class TransporteurRequest extends FormRequest
             'conducteur_cin.max' => 'Le CIN du conducteur ne peut pas dépasser 20 caractères.',
             'conducteur_cin.unique' => 'Ce CIN de conducteur est déjà utilisé.',
 
-            'conducteur_telephone.required' => 'Le téléphone du conducteur est requis.',
-            'conducteur_telephone.string' => 'Le téléphone du conducteur doit être une chaîne de caractères.',
-            'conducteur_telephone.max' => 'Le téléphone du conducteur ne peut pas dépasser 20 caractères.',
+            ...ValidationHelper::telephoneMessages('conducteur_telephone'),
 
             'vehicule_type.required' => 'Le type de véhicule est requis.',
             'vehicule_type.string' => 'Le type de véhicule doit être une chaîne de caractères.',

@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -19,7 +20,10 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        abort_unless(auth()->user()->can('users.view'), 403);
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.view')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de voir les utilisateurs.');
+        }
 
         $users = User::with('roles')->latest()->get();
         $roles = Role::orderBy('name')->get();
@@ -35,7 +39,10 @@ class UserController extends Controller
      */
     public function create()
     {
-        //
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.create')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de créer un utilisateur.');
+        }
     }
 
     /**
@@ -43,7 +50,10 @@ class UserController extends Controller
      */
     public function store(UserRequest $request)
     {
-        abort_unless(auth()->user()->can('users.create'), 403);
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.create')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de créer un utilisateur.');
+        }
 
         try {
             $validated = $request->validated();
@@ -59,10 +69,15 @@ class UserController extends Controller
                 $user->syncRoles($validated['roles']);
             }
 
-            return redirect()->route('users.index')->with('success', 'Utilisateur créé avec succès');
+            if ($user) {
+                return redirect()->route('users.index')->with('success', 'Utilisateur créé avec succès');
+            }
+
+            return redirect()->back()->with('error', 'Impossible de créer l\'utilisateur. Veuillez réessayer.')->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la création: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur UserController::store: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la création de l\'utilisateur.')->withInput();
         }
     }
 
@@ -71,7 +86,10 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        abort_unless(auth()->user()->can('users.view'), 403);
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.view')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de voir cet utilisateur.');
+        }
 
         // Implementation can be added here if needed
         //
@@ -82,7 +100,10 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        abort_unless(auth()->user()->can('users.edit'), 403);
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.edit')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de modifier cet utilisateur.');
+        }
 
         // Implementation can be added here if needed
         //
@@ -93,7 +114,10 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, User $user)
     {
-        abort_unless(auth()->user()->can('users.edit'), 403);
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.edit')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de modifier cet utilisateur.');
+        }
 
         try {
             $validated = $request->validated();
@@ -106,7 +130,7 @@ class UserController extends Controller
                 $user->password = $validated['password'];
             }
 
-            $user->save();
+            $updated = $user->save();
 
             // Mettre à jour les rôles
             if (isset($validated['roles'])) {
@@ -117,13 +141,15 @@ class UserController extends Controller
                 }
             }
 
-            if ($user) {
+            if ($updated) {
                 return redirect()->route('users.index')->with('success', 'Utilisateur mis à jour avec succès');
             }
-            return redirect()->back()->with('error', 'Impossible de mettre à jour l\'utilisateur. Veuillez réessayer.');
 
-        } catch (\Exception $th) {
-            return redirect()->back()->with('error', 'Échec de la mise à jour de l\'utilisateur.');
+            return redirect()->back()->with('error', 'Aucune modification effectuée sur l\'utilisateur.')->withInput();
+
+        } catch (\Exception $e) {
+            Log::error('Erreur UserController::update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la mise à jour de l\'utilisateur.')->withInput();
         }
     }
 
@@ -132,15 +158,27 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        abort_unless(auth()->user()->can('users.delete'), 403);
+        // ✅ PERMISSIONS OBLIGATOIRES
+        if (!auth()->user()->can('users.delete')) {
+            abort(403, 'Vous n\'avez pas l\'autorisation de supprimer cet utilisateur.');
+        }
 
         try {
             if ($user) {
-                $user->delete();
-                return redirect()->route('users.index')->with('success', 'Utilisateur supprimé avec succès');
+                $deleted = $user->delete();
+
+                if ($deleted) {
+                    return redirect()->route('users.index')->with('success', 'Utilisateur supprimé avec succès');
+                }
+
+                return redirect()->back()->with('error', 'Impossible de supprimer l\'utilisateur. Veuillez réessayer.');
             }
+
+            return redirect()->back()->with('error', 'Utilisateur introuvable.');
+
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['message' => 'Erreur lors de la suppression: ' . $e->getMessage()])->withInput();
+            Log::error('Erreur UserController::destroy: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de la suppression de l\'utilisateur.');
         }
     }
 }

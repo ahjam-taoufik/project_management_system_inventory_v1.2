@@ -10,17 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Check, Truck, Package, AlertCircle, CheckCircle, XCircle, RotateCcw, Calculator } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Plus, Trash2, Check, Truck, Package, AlertCircle, CheckCircle, XCircle, RotateCcw, Calculator, RefreshCw } from 'lucide-react';
+import { ConfirmDialog } from "@/components/dialogs";
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Client, Commercial, Product } from '../types';
@@ -74,6 +65,8 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     const [open, setOpen] = useState(false);
     const [usePurchasePrice, setUsePurchasePrice] = useState(false);
     const [showAlertDialog, setShowAlertDialog] = useState(false);
+    const [showDuplicateBlDialog, setShowDuplicateBlDialog] = useState(false);
+    const [isLoadingNextNumber, setIsLoadingNextNumber] = useState(false);
     const { can } = usePermissions();
 
     // États locaux pour gérer l'affichage des champs numériques
@@ -134,12 +127,22 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                             ? Number(productData.prix_achat_colis || 0)
                             : Number(productData.prix_vente_colis || 0);
 
-                        // Appliquer le pourcentage au prix unitaire (même si pourcentageClient est 0)
-                        const prixAvecPourcentage = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                        // Vérifier si le prix actuel correspond au prix original (avec tolérance pour les arrondis)
+                        const currentPrice = product.prix_produit;
+                        const isOriginalPrice = Math.abs(currentPrice - prixDeBase) < 0.01;
+
+                        let newPrice;
+                        if (isOriginalPrice) {
+                            // Si c'est un prix par défaut, appliquer le pourcentage au prix de base
+                            newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                        } else {
+                            // Si c'est un prix personnalisé, appliquer le pourcentage au prix personnalisé
+                            newPrice = currentPrice + (currentPrice * pourcentageClient / 100);
+                        }
 
                         return {
                             ...product,
-                            prix_produit: prixAvecPourcentage,
+                            prix_produit: newPrice,
                             poids_produit: productData.product_Poids || product.poids_produit || 0,
                         };
                     }
@@ -154,12 +157,16 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
         if (data.client_id) {
             const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
             if (selectedClient) {
-                // Mettre à jour remise_es avec la valeur du nouveau client
-                const remiseEsValue = selectedClient.remise_special ? selectedClient.remise_special.toString() : '';
-                const clientGdgValue = selectedClient.pourcentage ? selectedClient.pourcentage.toString() : '';
+                // Ne pré-remplir que si les champs sont vides (première sélection)
+                if (data.remise_es === '' || data.remise_es === null || data.remise_es === undefined) {
+                    const remiseEsValue = selectedClient.remise_special ? selectedClient.remise_special.toString() : '';
+                    setData('remise_es', remiseEsValue);
+                }
 
-                setData('remise_es', remiseEsValue);
-                setData('client_gdg', clientGdgValue);
+                if (data.client_gdg === '' || data.client_gdg === null || data.client_gdg === undefined) {
+                    const clientGdgValue = selectedClient.pourcentage ? selectedClient.pourcentage.toString() : '';
+                    setData('client_gdg', clientGdgValue);
+                }
             }
         } else {
             // Si aucun client n'est sélectionné, vider les champs et réinitialiser les états
@@ -186,12 +193,23 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                             ? Number(productData.prix_achat_colis || 0)
                             : Number(productData.prix_vente_colis || 0);
 
-                        // Appliquer le pourcentage au prix unitaire (même si pourcentageClient est 0)
-                        const prixAvecPourcentage = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                        // Vérifier si le prix actuel correspond au prix original (avec tolérance pour les arrondis)
+                        const currentPrice = product.prix_produit;
+                        const isOriginalPrice = Math.abs(currentPrice - prixDeBase) < 0.01;
+
+                        let newPrice;
+                        if (isOriginalPrice) {
+                            // Si c'est un prix par défaut, appliquer le pourcentage au prix de base
+                            newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                        } else {
+                            // Si c'est un prix personnalisé, recalculer à partir du prix de base pour éviter l'accumulation
+                            // On applique le pourcentage au prix de base, pas au prix actuel qui peut contenir des pourcentages précédents
+                            newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                        }
 
                         return {
                             ...product,
-                            prix_produit: prixAvecPourcentage,
+                            prix_produit: newPrice,
                             poids_produit: productData.product_Poids || product.poids_produit || 0,
                         };
                     }
@@ -334,12 +352,6 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
             retour: Number(Number(data.retour || 0).toFixed(2))
         };
 
-        console.log('=== DÉBOGAGE TYPE DE PRIX ===');
-        console.log('usePurchasePrice (état du switch):', usePurchasePrice);
-        console.log('Type de usePurchasePrice:', typeof usePurchasePrice);
-        console.log('formattedProducts avec use_achat_price:', formattedProducts);
-        console.log('Data finale pour soumission:', submitData);
-        console.log('=== FIN DÉBOGAGE ===');
 
         // Utiliser router.post directement avec les données complètes
         router.post(route('sorties.store'), submitData, {
@@ -358,7 +370,13 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
             },
             onError: (errors) => {
                 console.error('Erreurs de validation:', errors);
-                toast.error('Erreur lors de la création de la sortie');
+
+                // Vérifier si c'est une erreur de numéro BL dupliqué
+                if (errors.numero_bl && errors.numero_bl.includes('déjà')) {
+                    setShowDuplicateBlDialog(true);
+                } else {
+                    toast.error('Erreur lors de la création de la sortie');
+                }
             },
         });
     };
@@ -385,6 +403,7 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
         if (field === 'product_id') {
             const selectedProduct = products.find((p) => p.id.toString() === value);
             if (selectedProduct) {
+                // Quand on change de produit, TOUJOURS recalculer le prix avec le nouveau produit
                 // Récupérer le pourcentage client G/DG (priorité à la valeur saisie)
                 const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
                 const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
@@ -395,15 +414,27 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                     : Number(selectedProduct.prix_vente_colis || 0);
 
                 // Appliquer le pourcentage au prix unitaire
-                const prixAvecPourcentage = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                const newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
 
                 updatedProducts[index] = {
                     ...updatedProducts[index],
                     product_id: value as string,
-                    prix_produit: prixAvecPourcentage,
+                    prix_produit: newPrice,
                     poids_produit: selectedProduct.product_Poids ? selectedProduct.product_Poids * updatedProducts[index].quantite_produit : 0, // Poids total de la ligne
                 };
             }
+        } else if (field === 'prix_produit') {
+            // Si l'utilisateur modifie manuellement le prix, appliquer le pourcentage client G/DG
+            const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
+            const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
+
+            // Appliquer le pourcentage au prix saisi par l'utilisateur
+            const prixAvecPourcentage = (value as number) + ((value as number) * pourcentageClient / 100);
+
+            updatedProducts[index] = {
+                ...updatedProducts[index],
+                [field]: prixAvecPourcentage,
+            };
         } else {
             updatedProducts[index] = {
                 ...updatedProducts[index],
@@ -462,6 +493,28 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
         setRetourDisplay('0.00');
     };
 
+    const loadNextBlNumber = async () => {
+        setIsLoadingNextNumber(true);
+        try {
+            const response = await fetch(route('api.next-bl-number'), {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setData('numero_bl', data.next_number);
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement du prochain numéro:', error);
+        } finally {
+            setIsLoadingNextNumber(false);
+        }
+    };
+
     // Ne pas afficher le bouton si l'utilisateur n'a pas la permission
     if (!can('sorties.create')) {
         return null;
@@ -476,6 +529,8 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                 setRemiseTrimestrielleDisplay('0.00');
                 setValeurAjouteeDisplay('0.00');
                 setRetourDisplay('0.00');
+                // Charger automatiquement le prochain numéro de BL
+                loadNextBlNumber();
             } else {
                 // Réinitialiser complètement quand la modal se ferme
                 resetForm();
@@ -518,19 +573,34 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                                     <Label htmlFor="numero-bl" className="text-xs font-medium flex items-center gap-1">
                                         Numéro BL
                                         <span className="text-red-500">*</span>
+                                        <Badge variant="secondary" className="text-xs">Auto-suggéré</Badge>
                                     </Label>
                                     <div className="relative">
                                         <Input
                                             id="numero-bl"
                                             name="numero_bl"
                                             type="text"
-                                            placeholder="BL-2024-001"
-                                            className="h-9 text-sm transition-all duration-200"
+                                            placeholder="BL2508001"
+                                            className="h-9 text-sm transition-all duration-200 pr-16"
                                             value={data.numero_bl}
                                             onChange={(e) => setData('numero_bl', e.target.value)}
                                             aria-describedby={errors.numero_bl ? 'numero-bl-error' : undefined}
                                         />
-                                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                                            {isLoadingNextNumber ? (
+                                                <RefreshCw className="w-3 h-3 text-blue-500 animate-spin" />
+                                            ) : (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 w-6 p-0 hover:bg-blue-100"
+                                                    onClick={loadNextBlNumber}
+                                                    title="Recharger le prochain numéro"
+                                                >
+                                                    <RefreshCw className="w-3 h-3 text-blue-500" />
+                                                </Button>
+                                            )}
                                             {data.numero_bl.trim() && !errors.numero_bl && <CheckCircle className="w-3 h-3 text-green-500" />}
                                             {errors.numero_bl && <XCircle className="w-3 h-3 text-red-500" />}
                                         </div>
@@ -1321,29 +1391,30 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
             </DialogContent>
 
             {/* Alert Dialog pour les lignes sans produit */}
-            <AlertDialog open={showAlertDialog} onOpenChange={setShowAlertDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-                            <AlertCircle className="w-5 h-5" />
-                            Lignes de commande incomplètes
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-left">
-                            Certaines lignes de commande ne contiennent pas de produit sélectionné.
-                            Veuillez sélectionner un produit pour toutes les lignes ou supprimer les lignes vides avant de créer la sortie.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Fermer</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => setShowAlertDialog(false)}
-                            className="bg-red-600 hover:bg-red-700"
-                        >
-                            Compris
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={showAlertDialog}
+                onOpenChange={setShowAlertDialog}
+                title="Lignes de commande incomplètes"
+                description="Certaines lignes de commande ne contiennent pas de produit sélectionné. Veuillez sélectionner un produit pour toutes les lignes ou supprimer les lignes vides avant de créer la sortie."
+                type="error"
+                confirmText="Compris"
+                cancelText="Fermer"
+            />
+
+            {/* Alert Dialog pour numéro BL dupliqué */}
+            <ConfirmDialog
+                open={showDuplicateBlDialog}
+                onOpenChange={setShowDuplicateBlDialog}
+                title="Numéro de BL déjà utilisé"
+                description="Le numéro de bon de livraison que vous avez saisi existe déjà dans le système. Veuillez utiliser un numéro unique ou générer automatiquement le prochain numéro disponible."
+                type="error"
+                confirmText="Compris"
+                cancelText="Fermer"
+                onConfirm={() => {
+                    // Optionnel : générer automatiquement le prochain numéro
+                    loadNextBlNumber();
+                }}
+            />
         </Dialog>
     );
 }

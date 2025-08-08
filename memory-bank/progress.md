@@ -51,9 +51,13 @@ The core inventory management system is functionally complete with all major CRU
 - [ ] Code deduplication and refactoring
 - [ ] Enhanced error handling
 
-### Testing Coverage (30%)
+### Testing Coverage (60%)
 - [x] Basic feature tests for auth flows
 - [x] Permission enforcement tests
+- [x] **Ville tests** (17/17 - 100% réussis)
+- [x] **Secteur tests** (21/21 - 100% réussis)
+- [x] **Commercial tests** (33/33 - 100% réussis avec validation téléphone complète)
+- [x] **Validation de téléphone standardisée** (règles documentées et implémentées)
 - [ ] Comprehensive unit tests for all models
 - [ ] Controller integration tests
 - [ ] Frontend component testing
