@@ -33,7 +33,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('brands', BrandController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('products', ProductController::class);
-    Route::resource('promotions', PromotionController::class);
+    // Ancien: Route::resource('promotions', PromotionController::class);
+    // Nouvelles routes séparées pour promotions d'Entrée et de Sortie
+    Route::resource('promotions-entrer', App\Http\Controllers\PromotionEntrerController::class)->parameters([
+        'promotions-entrer' => 'promotion'
+    ]);
+    Route::resource('promotions-sortie', App\Http\Controllers\PromotionSortieController::class)->parameters([
+        'promotions-sortie' => 'promotion'
+    ]);
     Route::resource('livreurs', LivreurController::class);
     Route::resource('transporteurs', TransporteurController::class);
     Route::resource('entrers', EntrerController::class);

@@ -16,6 +16,7 @@ class Promotion extends Model
         'produit_offert_id',
         'quantite_produit_offert',
         'is_active',
+        'mouvement_type',
     ];
 
     protected $casts = [
@@ -23,6 +24,22 @@ class Promotion extends Model
         'updated_at' => 'datetime',
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Scope promotions for Entrer context
+     */
+    public function scopeEntrer($query)
+    {
+        return $query->where('mouvement_type', 'entrer');
+    }
+
+    /**
+     * Scope promotions for Sortie context
+     */
+    public function scopeSortie($query)
+    {
+        return $query->where('mouvement_type', 'sortie');
+    }
 
     public function produitPromotionnel(): BelongsTo
     {

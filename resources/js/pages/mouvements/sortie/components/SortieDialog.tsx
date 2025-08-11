@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Check, Truck, Package, AlertCircle, CheckCircle, XCircle, RotateCcw, Calculator, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Check, Truck, Package, AlertCircle, CheckCircle, XCircle, RotateCcw, Calculator, RefreshCw, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from "@/components/dialogs";
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -67,6 +67,7 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     const [showAlertDialog, setShowAlertDialog] = useState(false);
     const [showDuplicateBlDialog, setShowDuplicateBlDialog] = useState(false);
     const [isLoadingNextNumber, setIsLoadingNextNumber] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { can } = usePermissions();
 
     // États locaux pour gérer l'affichage des champs numériques
@@ -75,24 +76,29 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     const [valeurAjouteeDisplay, setValeurAjouteeDisplay] = useState('');
     const [retourDisplay, setRetourDisplay] = useState('');
 
-    const [selectedProducts, setSelectedProducts] = useState<
-        Array<{
-            product_id: string;
-            quantite_produit: number;
-            prix_produit: number;
-            poids_produit: number;
-        }>
-    >([
-        // Ligne par défaut
+    type SortieProductLine = {
+        uid: string;
+        product_id: string;
+        quantite_produit: number;
+        prix_produit: number;
+        poids_produit: number;
+        _isOffered?: boolean;
+        _sourceUid?: string;
+    };
+
+    const generateUid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
+    const [selectedProducts, setSelectedProducts] = useState<SortieProductLine[]>(() => ([
         {
+            uid: generateUid(),
             product_id: '',
             quantite_produit: 1,
             prix_produit: 0,
             poids_produit: 0,
         },
-    ]);
+    ]));
 
-    const { data, setData, processing, errors, reset } = useForm<SortieFormData>({
+    const { data, setData, errors, reset } = useForm<SortieFormData>({
         numero_bl: '',
         commercial_id: '',
         client_id: '',
@@ -114,7 +120,11 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     // Effet pour mettre à jour les prix de tous les produits lorsque l'état du switch change
     React.useEffect(() => {
         setSelectedProducts(prevProducts =>
-            prevProducts.map(product => {
+            prevProducts.map((product: SortieProductLine) => {
+                // Ne jamais recalculer les lignes offertes
+                if (product._isOffered) {
+                    return product;
+                }
                 if (product.product_id) {
                     const productData = products.find(p => p.id.toString() === product.product_id);
                     if (productData) {
@@ -180,7 +190,11 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     // Effet pour recalculer les prix unitaires quand remise_es ou client_gdg changent
     React.useEffect(() => {
         setSelectedProducts(prevProducts =>
-            prevProducts.map(product => {
+            prevProducts.map((product: SortieProductLine) => {
+                // Ne jamais recalculer les lignes offertes
+                if (product._isOffered) {
+                    return product;
+                }
                 if (product.product_id) {
                     const productData = products.find(p => p.id.toString() === product.product_id);
                     if (productData) {
@@ -293,11 +307,12 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     // Note: Le pourcentage client G/DG est déjà appliqué aux prix unitaires, donc on ne l'ajoute pas ici
     const montantTotal = totalGeneral - montantRemise - montantRemiseManuelle - montantRemiseTrimestrielle + montantValeurAjoutee + montantRetour;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Suppression: plus d'ajout de promotions au submit (gestion live uniquement)
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        console.log('=== DÉBUT SOUMISSION ===');
-        console.log('Data avant mise à jour:', data);
+
 
         if (selectedProducts.length === 0) {
             toast.error('Veuillez ajouter au moins un produit');
@@ -323,6 +338,10 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
 
             return {
                 ...product,
+                // Ne pas envoyer les champs internes
+                uid: undefined,
+                _isOffered: undefined,
+                _sourceUid: undefined,
                 quantite_produit: Number(Number(product.quantite_produit || 0).toFixed(2)),
                 prix_produit: Number(Number(product.prix_produit || 0).toFixed(2)),
                 poids_produit: Number(Number(totalWeight || 0).toFixed(2)), // Poids total de la ligne
@@ -333,9 +352,6 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                 // S'assurer que commercial_id est défini
         const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
         const commercialId = selectedClient?.idCommercial?.toString() || '';
-
-        console.log('Client sélectionné:', selectedClient);
-        console.log('Commercial ID:', commercialId);
 
         // Créer l'objet de données complet avec toutes les valeurs calculées
         const submitData = {
@@ -353,14 +369,21 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
         };
 
 
-        // Utiliser router.post directement avec les données complètes
+        // Utiliser router.post avec gestion manuelle de l'état processing
+        setIsSubmitting(true);
         router.post(route('sorties.store'), submitData, {
+            onStart: () => {
+                // Forcer le re-render pour afficher le spinner
+                setData(prev => ({ ...prev }));
+            },
             onSuccess: () => {
+                setIsSubmitting(false);
                 toast.success('Sortie créée avec succès');
                 setOpen(false);
                 reset();
                 setSelectedProducts([
                     {
+                        uid: generateUid(),
                         product_id: '',
                         quantite_produit: 1,
                         prix_produit: 0,
@@ -368,8 +391,9 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                     },
                 ]);
             },
-            onError: (errors) => {
-                console.error('Erreurs de validation:', errors);
+            onError: (errors: Record<string, string>) => {
+                setIsSubmitting(false);
+
 
                 // Vérifier si c'est une erreur de numéro BL dupliqué
                 if (errors.numero_bl && errors.numero_bl.includes('déjà')) {
@@ -384,6 +408,7 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     const addProduct = () => {
         setSelectedProducts([
             {
+                uid: generateUid(),
                 product_id: '',
                 quantite_produit: 1,
                 prix_produit: 0,
@@ -394,15 +419,81 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
     };
 
     const removeProduct = (index: number) => {
-        setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
+        const line = selectedProducts[index];
+        if (!line) return;
+        // Supprimer la ligne et sa ligne offerte liée le cas échéant
+        const remaining = selectedProducts.filter((l, i) => i !== index && l._sourceUid !== line.uid);
+        setSelectedProducts(remaining);
     };
 
-    const updateProduct = (index: number, field: keyof typeof selectedProducts[0], value: string | number) => {
+    const recalculatePromotionForIndex = async (lines: SortieProductLine[], index: number) => {
+        const baseLine = lines[index];
+        if (!baseLine || baseLine._isOffered) return;
+        if (!baseLine.product_id || !baseLine.quantite_produit || baseLine.quantite_produit <= 0) {
+            // Remove existing offered line if any
+            setSelectedProducts(prev => prev.filter(l => l._sourceUid !== baseLine.uid));
+            return;
+        }
+        const product = products.find(p => p.id.toString() === baseLine.product_id);
+        if (!product) return;
+        try {
+            const promoRes = await fetch(`/promotion-for-product/${product.product_Ref}?type=sortie`);
+            if (!promoRes.ok) return;
+            const promoData = await promoRes.json();
+            if (!promoData || !promoData.exists) {
+                setSelectedProducts(prev => prev.filter(l => l._sourceUid !== baseLine.uid));
+                return;
+            }
+            const x = Number(promoData.quantite_produit_promotionnel || 0);
+            const y = Number(promoData.offered_product?.quantite_offerte || 0);
+            const q = Number(baseLine.quantite_produit || 0);
+            const offeredProductId = promoData.offered_product?.product_id;
+            if (!(x > 0 && y > 0 && q >= x) || !offeredProductId) {
+                setSelectedProducts(prev => prev.filter(l => l._sourceUid !== baseLine.uid));
+                return;
+            }
+            const nb_offerts = Math.floor(q / x) * y;
+            const offeredProduct = products.find(p => p.id === offeredProductId);
+            const unitWeight = offeredProduct?.product_Poids || 0;
+
+            setSelectedProducts(prev => {
+                // Retirer ancienne ligne offerte liée
+                const withoutOld = prev.filter(l => l._sourceUid !== baseLine.uid);
+                // Insérer/ajouter la nouvelle ligne offerte juste après la ligne source si possible
+                const newOffered: SortieProductLine = {
+                    uid: generateUid(),
+                    _isOffered: true,
+                    _sourceUid: baseLine.uid,
+                    product_id: offeredProductId.toString(),
+                    quantite_produit: nb_offerts,
+                    prix_produit: 0,
+                    poids_produit: Number((unitWeight * nb_offerts).toFixed(2)),
+                };
+                // Trouver la position de baseLine dans withoutOld (peut avoir bougé)
+                const basePos = withoutOld.findIndex(l => l.uid === baseLine.uid);
+                if (basePos === -1) return [...withoutOld, newOffered];
+                const before = withoutOld.slice(0, basePos + 1);
+                const after = withoutOld.slice(basePos + 1);
+                return [...before, newOffered, ...after];
+            });
+        } catch (e) {
+            console.error('Erreur lors de la récupération de la promotion (sortie):', e);
+        }
+    };
+
+    const updateProduct = async (index: number, field: keyof SortieProductLine, value: string | number) => {
         const updatedProducts = [...selectedProducts];
+
+        const current = updatedProducts[index];
+        if (!current) return;
+        if (current._isOffered) {
+            // Ne pas éditer les lignes offertes manuellement
+            return;
+        }
 
         if (field === 'product_id') {
             const selectedProduct = products.find((p) => p.id.toString() === value);
-            if (selectedProduct) {
+                if (selectedProduct) {
                 // Quand on change de produit, TOUJOURS recalculer le prix avec le nouveau produit
                 // Récupérer le pourcentage client G/DG (priorité à la valeur saisie)
                 const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
@@ -423,7 +514,7 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                     poids_produit: selectedProduct.product_Poids ? selectedProduct.product_Poids * updatedProducts[index].quantite_produit : 0, // Poids total de la ligne
                 };
             }
-        } else if (field === 'prix_produit') {
+                } else if (field === 'prix_produit') {
             // Si l'utilisateur modifie manuellement le prix, appliquer le pourcentage client G/DG
             const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
             const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
@@ -451,10 +542,16 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
         }
 
         setSelectedProducts(updatedProducts);
+        // Recalculer la promotion pour cette ligne avec l'état mis à jour
+        await recalculatePromotionForIndex(updatedProducts, index);
     };
 
     // Fonction pour vérifier si une ligne de produit est valide
-    const isProductLineValid = (productLine: { product_id: string; quantite_produit: number; prix_produit: number; poids_produit: number }) => {
+    const isProductLineValid = (productLine: { product_id: string; quantite_produit: number; prix_produit: number; poids_produit: number; _isOffered?: boolean }) => {
+        // Les lignes offertes sont valides même à prix 0
+        if (productLine._isOffered) {
+            return productLine.product_id !== '' && productLine.quantite_produit > 0;
+        }
         return productLine.product_id !== '' && productLine.quantite_produit > 0 && productLine.prix_produit >= 0;
     };
 
@@ -480,6 +577,7 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
         reset();
         setSelectedProducts([
             {
+                uid: generateUid(),
                 product_id: '',
                 quantite_produit: 1,
                 prix_produit: 0,
@@ -876,11 +974,16 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                                         <Badge variant="secondary" className="text-xs">%</Badge>
                                     </Label>
                                     <Input
+                                        type="number"
+                                        step="0.01"
                                         value={data.client_gdg || ''}
                                         onChange={(e) => setData('client_gdg', e.target.value)}
                                         className="h-9 text-sm"
-                                        placeholder="Client G/DG"
+                                        placeholder="0.00"
                                     />
+                                    <p className="text-xs text-purple-600 font-medium">
+                                        💡 Valeurs positives ou négatives
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -1073,8 +1176,21 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                                 </div>
 
                                 {selectedProducts.map((productItem, index) => (
-                                    <div key={index} className={cn("border rounded-lg p-4 bg-background hover:shadow-md transition-all duration-200 group relative")}>
+                                    <div
+                                        key={index}
+                                        className={cn(
+                                            "border rounded-lg p-4 hover:shadow-md transition-all duration-200 group relative",
+                                            productItem._isOffered ? "bg-blue-50 border-blue-200" : "bg-background"
+                                        )}
+                                    >
                                         <div className="grid grid-cols-12 gap-4 items-end">
+                                            {productItem._isOffered && (
+                                                <div className="col-span-12 -mt-2 -mb-2">
+                                                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 text-[11px]">
+                                                        Offert (promotion)
+                                                    </Badge>
+                                                </div>
+                                            )}
                                             {/* Product Selection */}
                                             <div className="col-span-4 space-y-1">
                                                 <ProtectedCombobox
@@ -1103,24 +1219,34 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                                                     step="0.01"
                                                     value={productItem.quantite_produit}
                                                     onChange={(e) => {
+                                                        if (productItem._isOffered) return; // non éditable
                                                         const newQuantity = parseFloat(e.target.value) || 0;
                                                         updateProduct(index, 'quantite_produit', newQuantity);
                                                     }}
-                                                    className="h-9 text-sm"
+                                                    className={cn("h-9 text-sm", productItem._isOffered && "bg-blue-100 cursor-not-allowed")}
                                                     placeholder="0"
+                                                    readOnly={!!productItem._isOffered}
                                                 />
                                             </div>
 
                                             {/* Price */}
                                             <div className="col-span-2 space-y-1">
-                                                                                                    <Input
+                                                    <Input
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
                                                         value={formatNumberForDisplay(productItem.prix_produit)}
-                                                        onChange={(e) => updateProduct(index, 'prix_produit', parseFloat(e.target.value) || 0)}
-                                                        className={`h-9 text-sm transition-colors ${usePurchasePrice ? 'bg-red-200 border-red-500 text-red-700 focus:border-red-400 focus:ring-red-400' : ''}`}
+                                                        onChange={(e) => {
+                                                            if (productItem._isOffered) return; // non éditable
+                                                            updateProduct(index, 'prix_produit', parseFloat(e.target.value) || 0);
+                                                        }}
+                                                        className={cn(
+                                                            "h-9 text-sm transition-colors",
+                                                            usePurchasePrice && "bg-red-200 border-red-500 text-red-700 focus:border-red-400 focus:ring-red-400",
+                                                            productItem._isOffered && "bg-blue-100 cursor-not-allowed"
+                                                        )}
                                                         placeholder="0.00"
+                                                        readOnly={!!productItem._isOffered}
                                                     />
                                             </div>
 
@@ -1380,10 +1506,17 @@ export default function SortieDialog({ products, commerciaux, clients, livreurs 
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={processing || !canSubmitForm()}
+                                disabled={isSubmitting || !canSubmitForm()}
                                 className="w-full sm:w-auto transition-all duration-200 hover:scale-105"
                             >
-                                {processing ? 'Création...' : 'Créer la sortie'}
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Création...
+                                    </>
+                                ) : (
+                                    'Créer la sortie'
+                                )}
                             </Button>
                         </DialogFooter>
                     </div>

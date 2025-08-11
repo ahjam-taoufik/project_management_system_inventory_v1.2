@@ -15,6 +15,8 @@ return new class extends Migration
             $table->foreignId('produit_offert_id')->constrained('products')->onDelete('cascade');
             $table->integer('quantite_produit_offert');
             $table->boolean('is_active')->default(true); // Ajout : activation/désactivation de la promotion
+            // Discriminant de contexte pour distinguer les promotions Entrée vs Sortie
+            $table->enum('mouvement_type', ['entrer', 'sortie'])->default('sortie')->index();
             $table->timestamps();
         });
     }

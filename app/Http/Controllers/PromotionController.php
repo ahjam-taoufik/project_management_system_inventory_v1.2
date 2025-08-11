@@ -50,7 +50,7 @@ class PromotionController extends Controller
      * API: Vérifie si un produit a une promotion active (par référence produit).
      * Retourne les infos du produit offert ou null.
      */
-    public function getPromotionForProduct($ref_produit)
+    public function getPromotionForProduct(Request $request, $ref_produit)
     {
         try {
             // On cherche le produit principal par sa référence
@@ -61,6 +61,9 @@ class PromotionController extends Controller
             // On cherche une promotion où ce produit est le produit promotionnel
             $promotion = \App\Models\Promotion::where('produit_promotionnel_id', $product->id)
                 ->where('is_active', true)
+                ->when($request->query('type'), function ($query, $type) {
+                    $query->where('mouvement_type', $type);
+                })
                 ->first();
             if ($promotion) {
                 $offered = $promotion->produitOffert;

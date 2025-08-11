@@ -13,7 +13,7 @@ import { Client, Commercial, Product, Sortie } from '../types';
 import ProtectedCombobox from '@/components/patterns/ProtectedCombobox';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Truck, Package, AlertCircle, CheckCircle, XCircle, RotateCcw, Calculator } from 'lucide-react';
+import { Check, Truck, Package, AlertCircle, CheckCircle, XCircle, RotateCcw, Calculator, Loader2 } from 'lucide-react';
 
 interface SortieEditDialogProps {
     sortie: Sortie;
@@ -73,6 +73,8 @@ export default function SortieEditDialog({
 }: SortieEditDialogProps) {
     const [usePurchasePrice, setUsePurchasePrice] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [initialData, setInitialData] = useState<SortieEditFormData | null>(null);
     const [selectedProducts, setSelectedProducts] = useState<Array<{
         product_id: string;
         quantite_produit: number;
@@ -80,7 +82,7 @@ export default function SortieEditDialog({
         poids_produit: number;
     }>>([]);
 
-    const { data, setData, processing, errors } = useForm<SortieEditFormData>({
+    const { data, setData, errors } = useForm<SortieEditFormData>({
         numero_bl: sortie.numero_bl,
         commercial_id: sortie.commercial.id.toString(),
         client_id: sortie.client.id.toString(),
@@ -103,25 +105,8 @@ export default function SortieEditDialog({
     // Initialiser les produits et le type de prix quand le modal s'ouvre
     React.useEffect(() => {
         if (open) {
-            console.log('=== DÉBOGAGE MODIFICATION SORTIE ===');
-            console.log('Sortie complète:', sortie);
-            console.log('Produits de la sortie:', sortie.products);
-
-            // Vérifier chaque produit individuellement
-            sortie.products.forEach((product, index) => {
-                console.log(`Produit ${index + 1}:`, {
-                    id: product.product.id,
-                    nom: product.product.product_libelle,
-                    prix_produit: product.prix_produit,
-                    use_achat_price: product.use_achat_price,
-                    type_use_achat_price: typeof product.use_achat_price
-                });
-            });
-
             // Déterminer le type de prix basé sur les produits existants
             const hasAchatPrice = sortie.products.some(product => product.use_achat_price);
-            console.log('hasAchatPrice (résultat):', hasAchatPrice);
-            console.log('Produits avec prix d\'achat:', sortie.products.filter(product => product.use_achat_price));
 
             setUsePurchasePrice(hasAchatPrice);
 
@@ -132,12 +117,33 @@ export default function SortieEditDialog({
                 prix_produit: product.prix_produit,
                 poids_produit: product.poids_produit,
             }));
-            console.log('Produits initialisés:', initialProducts);
             setSelectedProducts(initialProducts);
+
+            // Sauvegarder les données initiales pour comparaison
+            const initialFormData: SortieEditFormData = {
+                numero_bl: sortie.numero_bl,
+                commercial_id: sortie.commercial.id.toString(),
+                client_id: sortie.client.id.toString(),
+                date_bl: sortie.date_bl.split('T')[0],
+                livreur_id: sortie.livreur_id?.toString() || '',
+                products: initialProducts,
+                remise_speciale: sortie.remise_speciale,
+                remise_trimestrielle: sortie.remise_trimestrielle,
+                valeur_ajoutee: sortie.valeur_ajoutee,
+                retour: sortie.retour,
+                remise_es: sortie.remise_es || '',
+                client_gdg: sortie.client_gdg.toString(),
+                total_general: sortie.total_general,
+                montant_total_final: sortie.montant_total_final,
+                total_poids: sortie.total_poids,
+                montant_remise_especes: sortie.montant_remise_especes,
+                archived: sortie.archived,
+            };
+            setInitialData(initialFormData);
             setIsInitialized(true);
-            console.log('=== FIN DÉBOGAGE ===');
         } else {
             setIsInitialized(false);
+            setInitialData(null);
         }
     }, [open, sortie]);
 
@@ -183,8 +189,18 @@ export default function SortieEditDialog({
                                 ? Number(productData.prix_achat_colis || 0)
                                 : Number(productData.prix_vente_colis || 0);
 
-                            // Appliquer le pourcentage client G/DG
-                            const newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                            // Vérifier si le prix actuel correspond au prix original (avec tolérance pour les arrondis)
+                            const currentPrice = Number(product.prix_produit);
+                            const isOriginalPrice = Math.abs(currentPrice - prixDeBase) < 0.01;
+
+                            let newPrice;
+                            if (isOriginalPrice) {
+                                // Si c'est un prix par défaut, appliquer le pourcentage au prix de base
+                                newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                            } else {
+                                // Si c'est un prix personnalisé, appliquer le pourcentage au prix personnalisé
+                                newPrice = currentPrice + (currentPrice * pourcentageClient / 100);
+                            }
 
                             return {
                                 ...product,
@@ -198,6 +214,50 @@ export default function SortieEditDialog({
             );
         }
     }, [usePurchasePrice, products, data.client_id, data.client_gdg, isInitialized]);
+
+    // Effet pour recalculer les prix unitaires quand remise_es ou client_gdg changent
+    React.useEffect(() => {
+        if (isInitialized) {
+            setSelectedProducts(prevProducts =>
+                prevProducts.map(product => {
+                    if (product.product_id) {
+                        const productData = products.find(p => p.id.toString() === product.product_id);
+                        if (productData) {
+                            // Récupérer le pourcentage client G/DG
+                            const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
+                            const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
+
+                            // Calculer le prix de base selon le type de prix
+                            const prixDeBase = usePurchasePrice
+                                ? Number(productData.prix_achat_colis || 0)
+                                : Number(productData.prix_vente_colis || 0);
+
+                            // Vérifier si le prix actuel correspond au prix original (avec tolérance pour les arrondis)
+                            const currentPrice = Number(product.prix_produit);
+                            const isOriginalPrice = Math.abs(currentPrice - prixDeBase) < 0.01;
+
+                            let newPrice;
+                            if (isOriginalPrice) {
+                                // Si c'est un prix par défaut, appliquer le pourcentage au prix de base
+                                newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                            } else {
+                                // Si c'est un prix personnalisé, recalculer à partir du prix de base pour éviter l'accumulation
+                                // On applique le pourcentage au prix de base, pas au prix actuel qui peut contenir des pourcentages précédents
+                                newPrice = prixDeBase + (prixDeBase * pourcentageClient / 100);
+                            }
+
+                            return {
+                                ...product,
+                                prix_produit: newPrice,
+                                poids_produit: productData.product_Poids ? productData.product_Poids * product.quantite_produit : product.poids_produit,
+                            };
+                        }
+                    }
+                    return product;
+                })
+            );
+        }
+    }, [data.client_gdg, data.remise_es, products, usePurchasePrice, data.client_id, isInitialized]);
 
     const addProduct = () => {
         setSelectedProducts([
@@ -235,13 +295,56 @@ export default function SortieEditDialog({
         return productItem.poids_produit;
     };
 
+    // Fonction pour vérifier si des modifications ont été apportées
+    const hasChanges = (): boolean => {
+        if (!initialData || !isInitialized) return false;
+
+        // Comparer les données principales
+        const mainFieldsChanged =
+            data.numero_bl !== initialData.numero_bl ||
+            data.client_id !== initialData.client_id ||
+            data.date_bl !== initialData.date_bl ||
+            data.livreur_id !== initialData.livreur_id ||
+            data.remise_es !== initialData.remise_es ||
+            data.client_gdg !== initialData.client_gdg ||
+            data.remise_speciale !== initialData.remise_speciale ||
+            data.remise_trimestrielle !== initialData.remise_trimestrielle ||
+            data.valeur_ajoutee !== initialData.valeur_ajoutee ||
+            data.retour !== initialData.retour;
+
+        if (mainFieldsChanged) return true;
+
+        // Comparer le type de prix
+        const initialHasAchatPrice = initialData.products.some(product => product.use_achat_price);
+        if (usePurchasePrice !== initialHasAchatPrice) return true;
+
+        // Comparer les produits
+        if (selectedProducts.length !== initialData.products.length) return true;
+
+        for (let i = 0; i < selectedProducts.length; i++) {
+            const current = selectedProducts[i];
+            const initial = initialData.products[i];
+
+            if (!initial) return true; // Nouveau produit ajouté
+
+            if (current.product_id !== initial.product_id ||
+                current.quantite_produit !== initial.quantite_produit ||
+                Math.abs(current.prix_produit - initial.prix_produit) > 0.01 ||
+                Math.abs(current.poids_produit - initial.poids_produit) > 0.01) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     const updateProduct = (index: number, field: keyof typeof selectedProducts[0], value: string | number) => {
         const updatedProducts = [...selectedProducts];
 
         if (field === 'product_id') {
             const selectedProduct = products.find((p) => p.id.toString() === value);
             if (selectedProduct) {
-                // Quand on change de produit, TOUJOURS recalculer le prix avec le nouveau produit
+                // Quand on change de produit, recalculer le prix avec le nouveau produit
                 // Récupérer le pourcentage client G/DG (priorité à la valeur saisie)
                 const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
                 const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
@@ -257,10 +360,22 @@ export default function SortieEditDialog({
                 updatedProducts[index] = {
                     ...updatedProducts[index],
                     product_id: value as string,
-                    prix_produit: newPrice,
+                    prix_produit: newPrice, // Pour un nouveau produit, utiliser le prix calculé
                     poids_produit: selectedProduct.product_Poids ? selectedProduct.product_Poids * updatedProducts[index].quantite_produit : 0,
                 };
             }
+        } else if (field === 'prix_produit') {
+            // Si l'utilisateur modifie manuellement le prix, appliquer le pourcentage client G/DG
+            const selectedClient = clients.find((c) => c.id.toString() === data.client_id);
+            const pourcentageClient = data.client_gdg !== '' ? parseFloat(data.client_gdg) || 0 : (selectedClient?.pourcentage ? Number(selectedClient.pourcentage) : 0);
+
+            // Appliquer le pourcentage au prix saisi par l'utilisateur
+            const prixAvecPourcentage = (value as number) + ((value as number) * pourcentageClient / 100);
+
+            updatedProducts[index] = {
+                ...updatedProducts[index],
+                [field]: prixAvecPourcentage,
+            };
         } else {
             updatedProducts[index] = {
                 ...updatedProducts[index],
@@ -294,6 +409,8 @@ export default function SortieEditDialog({
             toast.error('Veuillez sélectionner un produit pour chaque ligne');
             return;
         }
+
+        setIsSubmitting(true);
 
         // Calculer les totaux
         const totalGeneral = selectedProducts.reduce((total, product) => {
@@ -331,11 +448,12 @@ export default function SortieEditDialog({
 
         router.put(route('sorties.update', sortie.id), submitData, {
             onSuccess: () => {
+                setIsSubmitting(false);
                 toast.success('Sortie modifiée avec succès');
                 onOpenChange(false);
             },
-            onError: (errors) => {
-                console.error('Erreurs de validation:', errors);
+            onError: () => {
+                setIsSubmitting(false);
                 toast.error('Erreur lors de la modification de la sortie');
             },
         });
@@ -384,10 +502,12 @@ export default function SortieEditDialog({
                                             name="numero_bl"
                                             type="text"
                                             placeholder="BL-2024-001"
-                                            className="h-9 text-sm transition-all duration-200"
+                                            className="h-9 text-sm transition-all duration-200 bg-gray-50 cursor-not-allowed"
                                             value={data.numero_bl}
                                             onChange={(e) => setData('numero_bl', e.target.value)}
                                             aria-describedby={errors.numero_bl ? 'numero-bl-error' : undefined}
+                                            readOnly
+                                            disabled
                                         />
                                         <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                                             {data.numero_bl.trim() && !errors.numero_bl && <CheckCircle className="w-3 h-3 text-green-500" />}
@@ -667,11 +787,16 @@ export default function SortieEditDialog({
                                         <Badge variant="secondary" className="text-xs">%</Badge>
                                     </Label>
                                     <Input
+                                        type="number"
+                                        step="0.01"
                                         value={data.client_gdg || ''}
                                         onChange={(e) => setData('client_gdg', e.target.value)}
                                         className="h-9 text-sm"
-                                        placeholder="Client G/DG"
+                                        placeholder="0.00"
                                     />
+                                    <p className="text-xs text-purple-600 font-medium">
+                                        💡 Valeurs positives ou négatives
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -1138,10 +1263,10 @@ export default function SortieEditDialog({
                         >
                             Annuler
                         </Button>
-                        <Button type="submit" disabled={processing}>
-                            {processing ? (
+                        <Button type="submit" disabled={isSubmitting || !hasChanges()}>
+                            {isSubmitting ? (
                                 <>
-                                    <RotateCcw className="w-4 h-4 mr-1 animate-spin" />
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                     Modification...
                                 </>
                             ) : (

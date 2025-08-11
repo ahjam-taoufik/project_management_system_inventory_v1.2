@@ -32,9 +32,80 @@ L'utilisateur a ajouté la documentation suivante dans Cursor pour un accès dir
 **Maintenant** : Consulter "Laravel-collection" pour comprendre l'utilisation correcte des collections
 
 ## Current Status
-**Phase**: Tests Optimisés - Tous les Tests 100% Réussis
-**Last Activity**: Correction de tous les tests avec 132/132 tests réussis
-**Next Focus**: Maintenance et amélioration continue des tests
+**Phase**: Amélioration Continue - Affichage des Totaux
+**Last Activity**: Ajout de l'affichage du montant général des lignes filtrées dans le module sortie
+**Next Focus**: Tests et validation des nouvelles fonctionnalités
+
+### ✅ **Ajout de la Colonne Remise Trimestrielle dans la Table des Sorties**
+- **Demande utilisateur** : Ajouter une colonne pour afficher la remise trimestrielle à droite de la colonne "Client G/DG"
+- **Solution implémentée** : 
+  - Ajout de la colonne `remise_trimestrielle` dans la configuration des colonnes
+  - Positionnement à droite de la colonne "Client G/DG" comme demandé
+  - Formatage cohérent avec les autres colonnes de remise (formatage des nombres, couleurs)
+  - Affichage conditionnel des couleurs (rouge si > 0, gris si = 0)
+- **Fichiers modifiés** :
+  - `resources/js/pages/mouvements/sortie/config/columns.tsx` : Ajout de la nouvelle colonne
+- **Fonctionnalités** :
+  - Affichage de la remise trimestrielle en dirhams (DH)
+  - Formatage des nombres avec espaces pour les milliers
+  - Couleur rouge pour les valeurs > 0, grise pour les valeurs = 0
+  - Cohérence visuelle avec les autres colonnes de remise
+  - En-tête clair "Remise Trimestrielle (DH)"
+- **Pattern réutilisable** : Ajout de colonnes de remise avec formatage cohérent
+
+### ✅ **Optimisation de l'Affichage du Montant Général des Lignes Filtrées**
+- **Demande utilisateur** : Intégrer l'affichage du montant total dans l'espace existant sans ajouter d'espace supplémentaire
+- **Solution implémentée** : 
+  - Intégration du montant total directement dans la zone des filtres existante
+  - Utilisation de `justify-between` pour positionner les filtres à gauche et le total à droite
+  - Design compact avec fond vert et bordure pour une excellente visibilité
+  - Suppression du composant séparé pour éviter l'espace supplémentaire
+- **Fichiers modifiés** :
+  - `resources/js/pages/mouvements/sortie/components/SortieTable.tsx` : Intégration dans FilterArea et suppression du composant séparé
+- **Fonctionnalités** :
+  - Affichage compact dans la zone des filtres existante
+  - Design moderne avec fond vert et bordure
+  - Informations claires : nombre de sorties et montant total
+  - Pas d'espace supplémentaire ajouté à la table
+  - Mise à jour en temps réel lors du filtrage
+- **Pattern réutilisable** : Intégration de totaux dans les zones de filtres existantes pour optimiser l'espace
+
+### ✅ **Ajout de l'Affichage du Montant Général des Lignes Filtrées**
+- **Demande utilisateur** : Afficher en haut le montant général des montants totaux des lignes filtrées, en respectant UX
+- **Solution implémentée** : 
+  - Création du composant `TotalMontantGeneral` dans `SortieTable.tsx`
+  - Calcul automatique du total des lignes de produits pour les sorties filtrées
+  - Affichage conditionnel uniquement quand il y a des données filtrées
+  - Design moderne avec carte colorée et informations détaillées
+- **Fichiers modifiés** :
+  - `resources/js/pages/mouvements/sortie/components/SortieTable.tsx` : Ajout du composant et logique de calcul
+- **Fonctionnalités** :
+  - Calcul automatique du total des lignes de produits filtrées
+  - Affichage du nombre de sorties filtrées
+  - Design moderne avec bordure verte et fond coloré
+  - Affichage conditionnel (seulement si données présentes)
+  - Mise à jour en temps réel lors du filtrage
+- **Pattern réutilisable** : Affichage de totaux filtrés dans les tables avec design cohérent
+
+### ✅ **Ajout du Filtre CommercialFilter au Module Sortie**
+- **Demande utilisateur** : Ajouter le filtre CommercialFilter au module sortie
+- **Solution implémentée** : 
+  - Intégration du composant `CommercialFilter` dans `SortieTable.tsx`
+  - Ajout de la gestion d'état pour les commerciaux sélectionnés
+  - Implémentation du filtrage des données par commercial
+  - Correction des types TypeScript pour cohérence
+- **Fichiers modifiés** :
+  - `resources/js/pages/mouvements/sortie/components/SortieTable.tsx` : Ajout du filtre et logique de filtrage
+  - `resources/js/pages/mouvements/sortie/AppTable.tsx` : Passage des données des commerciaux
+  - `resources/js/pages/mouvements/sortie/types.ts` : Correction du type Commercial
+  - `app/Http/Controllers/SortieController.php` : Correction du mapping des données
+- **Fonctionnalités** :
+  - Filtre multi-sélection des commerciaux
+  - Affichage du code et nom complet du commercial
+  - Bouton "Clear Filters" pour réinitialiser
+  - Filtrage en temps réel des sorties
+  - Interface cohérente avec les autres filtres
+- **Pattern réutilisable** : Intégration de filtres dans les tables avec gestion d'état React
 
 ## 🎯 **Tests Client - Succès Complet**
 - **✅ 32/32 tests réussis (100%)**
@@ -592,6 +663,40 @@ $difference = $newQuantity - $oldQuantity;
 **Pattern à réutiliser** : Pour les modifications de relations many-to-many avec impact sur le stock, privilégier la mise à jour intelligente plutôt que la suppression/recréation complète.
 
 ## Recent Accomplishments
+
+### ✅ Module Promotions scindé en Entrée/Sortie avec noyau réutilisable (Frontend)
+- Objectif: Distinguer clairement les promotions rattachées aux Mouvements Entrées et aux Mouvements Sorties tout en factorisant un noyau commun réutilisable.
+- Nouvelles structures créées:
+  - `resources/js/pages/promotion/shared/` (noyau commun)
+    - `types.ts` (types `Product`, `Promotion`, `PromotionContext`)
+    - `config/columnsFactory.tsx` (fabrique de colonnes communes)
+    - `components/PromotionDialogBase.tsx` (create)
+    - `components/PromotionEditDialogBase.tsx` (edit)
+    - `components/PromotionTableBase.tsx` (table)
+    - `components/ActionsDropDownBase.tsx` (actions Edit/Copy/Delete)
+  - `resources/js/pages/promotion/promotion_entrer/` (spécifique Entrée)
+    - `index.tsx`, `AppTable.tsx`
+    - `components/PromotionDialog.tsx`, `PromotionEditDialog.tsx`, `PromotionDropDown.tsx`, `PromotionTable.tsx`
+    - `config/columns.tsx`
+  - `resources/js/pages/promotion/promotion_sortie/` (spécifique Sortie)
+    - `index.tsx`, `AppTable.tsx`
+    - `components/PromotionDialog.tsx`, `PromotionEditDialog.tsx`, `PromotionDropDown.tsx`, `PromotionTable.tsx`
+    - `config/columns.tsx`
+- Navigation mise à jour (`resources/js/components/app-sidebar.tsx`):
+  - Nouveau menu parent "Promotions" (icône `Gift`) avec deux sous-liens:
+    - "Promotion Entrée" → `/promotions/entrer` (permission `promotions_entrer.view`)
+    - "Promotion Sortie" → `/promotions/sortie` (permission `promotions_sortie.view`)
+  - L'ancien lien "Promotions" sous "Manage Product" a été retiré.
+- Routes attendues côté backend (à créer/valider):
+  - `promotions-entrer.index|store|update|destroy`
+  - `promotions-sortie.index|store|update|destroy`
+- Permissions attendues:
+  - `promotions_entrer.view|create|edit|delete`
+  - `promotions_sortie.view|create|edit|delete`
+- Conformité patterns:
+  - Utilisation d'Inertia.js pour CRUD, modals shadcn/ui, pagination, tri et filtre.
+  - Chargement API pour `EditDialog` (exception autorisée pour data dynamique).
+  - Protocole de migration respecté: duplication contrôlée en phase de transition, suppression de l'ancien dossier `promotion/` prévue après validation routes/permissions.
 
 ### ✅ Entrer Module System (Just Completed)
 1. **Entrer Management**

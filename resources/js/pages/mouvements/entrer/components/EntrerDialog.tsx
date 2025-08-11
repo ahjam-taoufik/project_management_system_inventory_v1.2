@@ -290,6 +290,61 @@ export default function EntrerDialog({
     ));
   };
 
+  // Recalcule et applique en direct la ligne promotionnelle pour une ligne principale (avec valeurs passées)
+  const recalcPromotionForLine = async (mainLineId: string, productId: string, quantite: number) => {
+    if (!productId || !quantite || quantite <= 0) {
+      const offeredId = `offert-${mainLineId}`;
+      setProductLines(prev => prev.filter(l => l.id !== offeredId));
+      return;
+    }
+    const product = products.find(p => p.id.toString() === productId);
+    if (!product) return;
+    try {
+      const promoRes = await fetch(`/promotion-for-product/${product.product_Ref}?type=entrer`);
+      if (!promoRes.ok) return;
+      const promoData = await promoRes.json();
+      const x = promoData?.quantite_produit_promotionnel ?? 0;
+      const y = promoData?.offered_product?.quantite_offerte ?? 0;
+      let nb_offerts = 0;
+      if (x > 0 && y > 0 && quantite >= x) {
+        nb_offerts = Math.floor(quantite / x) * y;
+      }
+      const offeredId = `offert-${mainLineId}`;
+      setProductLines(prev => {
+        const offeredIndex = prev.findIndex(l => l.id === offeredId);
+        if (nb_offerts > 0 && promoData.exists && promoData.offered_product) {
+          if (offeredIndex !== -1) {
+            return prev.map(l => l.id === offeredId ? { ...l, quantite_produit: nb_offerts.toString() } : l);
+          } else {
+            toast.success('Produit offert ajouté automatiquement (promotion)');
+            return [
+              ...prev,
+              {
+                id: offeredId,
+                product_id: promoData.offered_product.product_id?.toString() || '',
+                ref_produit: promoData.offered_product.ref_produit || '',
+                prix_achat_produit: '0',
+                quantite_produit: nb_offerts.toString(),
+                total: '0',
+                manque: '',
+                _isOffered: true,
+                _mainLineId: mainLineId,
+              } as ProductLine,
+            ];
+          }
+        } else {
+          if (offeredIndex !== -1) {
+            return prev.filter(l => l.id !== offeredId);
+          }
+          return prev;
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la promotion (live):', error);
+      toast.error('Erreur lors de la récupération de la promotion');
+    }
+  };
+
   // Fonction pour ajouter une nouvelle ligne
   const addProductLine = () => {
     const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -506,7 +561,7 @@ export default function EntrerDialog({
         if (product) {
           const mainRef = product.product_Ref;
           try {
-            const promoRes = await fetch(`/promotion-for-product/${mainRef}`);
+            const promoRes = await fetch(`/promotion-for-product/${mainRef}?type=entrer`);
             if (promoRes.ok) {
               const promoData = await promoRes.json();
               const x = promoData.quantite_produit_promotionnel;
@@ -908,10 +963,12 @@ export default function EntrerDialog({
                         <ProductCombobox
                           products={products}
                           value={line.product_id}
-                          onValueChange={(value) => {
+                          onValueChange={async (value) => {
                             if (line._isOffered) return; // Non éditable
                             updateProductLine(line.id, { product_id: value });
-                            handleProductChange(value, line.id);
+                            await handleProductChange(value, line.id);
+                            const q = parseInt(((productLines.find(l => l.id === line.id)?.quantite_produit as string) || '0'));
+                            await recalcPromotionForLine(line.id, value, q);
                           }}
                           placeholder="Sélectionnez un produit..."
                           disabled={!!line._isOffered}
@@ -933,7 +990,7 @@ export default function EntrerDialog({
                           placeholder="Qté"
                           className="h-10 sm:h-11 w-[calc(100%+8px)]"
                           value={line.quantite_produit}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             if (line._isOffered) return; // Non éditable
                             const newQuantite = e.target.value;
                             const newTotal = calculateTotal(line.prix_achat_produit, newQuantite);
@@ -941,77 +998,11 @@ export default function EntrerDialog({
                               quantite_produit: newQuantite,
                               total: newTotal
                             });
+                            const q = parseInt(newQuantite || '0');
+                            await recalcPromotionForLine(line.id, line.product_id as string, q);
                           }}
                           readOnly={!!line._isOffered}
-                          onBlur={async () => {
-                            if (line._isOffered) return;
-                            // Log pour debug : onBlur appelé
-                            console.log('[onBlur] Champ quantité perdu le focus pour la ligne', line.id, line);
-                            if (line.product_id && line.quantite_produit && parseInt(line.quantite_produit) > 0) {
-                              const product = products.find(p => p.id.toString() === line.product_id);
-                              if (product) {
-                                const mainRef = product.product_Ref;
-                                try {
-                                  const promoRes = await fetch(`/promotion-for-product/${mainRef}`);
-                                  if (promoRes.ok) {
-                                    const promoData = await promoRes.json();
-                                    console.log('[onBlur] promoData:', promoData, 'quantité saisie:', line.quantite_produit);
-                                    const x = promoData.quantite_produit_promotionnel; // quantité d'achat requise
-                                    const y = promoData.offered_product?.quantite_offerte ?? 0; // quantité offerte
-                                    const q = parseInt(line.quantite_produit);
-                                    let nb_offerts = 0;
-                                    if (x > 0 && y > 0 && q >= x) {
-                                      nb_offerts = Math.floor(q / x) * y;
-                                    }
-                                    const offeredId = `offert-${line.id}`;
-                                    // Utilise la version fonctionnelle de setProductLines pour garantir l'accès au state à jour
-                                    setProductLines(prev => {
-                                      const offeredIndex = prev.findIndex(l => l.id === offeredId);
-                                      if (nb_offerts > 0 && promoData.exists && promoData.offered_product) {
-                                        if (offeredIndex !== -1) {
-                                          // Log debug : mise à jour ligne offerte
-                                          console.log('[onBlur] Mise à jour ligne offerte', offeredId, 'quantité:', nb_offerts);
-                                          return prev.map(l =>
-                                            l.id === offeredId
-                                              ? { ...l, quantite_produit: nb_offerts.toString() }
-                                              : l
-                                          );
-                                        } else {
-                                          // Log debug : ajout ligne offerte
-                                          console.log('[onBlur] Ajout ligne offerte', offeredId, 'quantité:', nb_offerts);
-                                          toast.success('Produit offert ajouté automatiquement (promotion)');
-                                          return [
-                                            ...prev,
-                                            {
-                                              id: offeredId,
-                                              product_id: promoData.offered_product.product_id?.toString() || '',
-                                              ref_produit: promoData.offered_product.ref_produit || '',
-                                              prix_achat_produit: '0',
-                                              quantite_produit: nb_offerts.toString(),
-                                              total: '0',
-                                              manque: '',
-                                              _isOffered: true,
-                                              _mainLineId: line.id,
-                                            }
-                                          ];
-                                        }
-                                      } else {
-                                        if (offeredIndex !== -1) {
-                                          // Log debug : suppression ligne offerte
-                                          console.log('[onBlur] Suppression ligne offerte', offeredId);
-                                          return prev.filter(l => l.id !== offeredId);
-                                        }
-                                        return prev;
-                                      }
-                                    });
-                                  }
-                                } catch (error) {
-                                  console.error('Erreur lors de la récupération de la promotion:', error);
-                                  toast.error('Erreur lors de la récupération de la promotion');
-                                }
-                              }
-                            }
-                          }}
+                          // Suppression du déclenchement onBlur: déclenchement désormais en direct sur onChange
                         />
                         {validationErrors[`product_lines.${index}.quantite_produit`] && (
                           <p className="text-xs text-red-500 mt-1 flex items-center gap-1">

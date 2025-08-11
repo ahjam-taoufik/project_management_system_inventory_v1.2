@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Sortie } from '../../types';
+import { Footer } from './Footer';
 
 interface PrintableSortieProps {
   sortie: Sortie;
@@ -48,7 +49,29 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
       [sortie.products]
     );
 
-    // Diviser les produits en pages - seulement s'il y a des produits
+    // Compter les options de montants significatives
+    const countSignificantAmountOptions = useMemo(() => {
+      let count = 0;
+
+      // Remise Es
+      if (isSignificantValue(sortie.montant_remise_especes)) count++;
+
+      // Remise Spéciale
+      if (isSignificantValue(sortie.remise_speciale)) count++;
+
+      // Remise Trimestrielle
+      if (isSignificantValue(sortie.remise_trimestrielle)) count++;
+
+      // Valeur Ajoutée
+      if (isSignificantValue(sortie.valeur_ajoutee)) count++;
+
+      // Retour
+      if (isSignificantValue(sortie.retour)) count++;
+
+      return count;
+    }, [sortie.montant_remise_especes, sortie.remise_speciale, sortie.remise_trimestrielle, sortie.valeur_ajoutee, sortie.retour]);
+
+    // Diviser les produits en pages avec condition spéciale
     const productPages = useMemo(() => {
       if (sortedProducts.length === 0) {
         return []; // Aucune page si pas de produits
@@ -60,16 +83,31 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
       while (currentIndex < sortedProducts.length) {
         // Calculer combien de produits mettre sur cette page
         const remainingProducts = sortedProducts.length - currentIndex;
-        const productsForThisPage: number = Math.min(PRODUCTS_PER_PAGE, remainingProducts);
+        let productsForThisPage: number = Math.min(PRODUCTS_PER_PAGE, remainingProducts);
+
+        // Condition spéciale : si on a exactement 24 produits ET plus d'une option de montants
+        // on réduit à 23 produits pour laisser de l'espace pour la section des montants
+        if (productsForThisPage === PRODUCTS_PER_PAGE &&
+            sortedProducts.length === PRODUCTS_PER_PAGE &&
+            countSignificantAmountOptions > 1) {
+          productsForThisPage = PRODUCTS_PER_PAGE - 1; // 23 produits au lieu de 24
+        }
 
         pages.push(sortedProducts.slice(currentIndex, currentIndex + productsForThisPage));
         currentIndex += productsForThisPage;
       }
 
       return pages;
-    }, [sortedProducts]);
+    }, [sortedProducts, countSignificantAmountOptions]);
 
     // Le nombre de pages est maintenant productPages.length
+
+    // Afficher uniquement "Montant Total" si égal à "Montant" (tolérance d'arrondi)
+    const totalsEqual = useMemo(() => {
+      const total = Number(sortie.total_general ?? 0);
+      const finalTotal = Number(sortie.montant_total_final ?? 0);
+      return Math.abs(finalTotal - total) < 0.005;
+    }, [sortie.total_general, sortie.montant_total_final]);
 
     return (
       <div ref={ref} className="print-content">
@@ -142,25 +180,58 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                 break-after: avoid !important;
               }
 
-              /* Footer positionné en bas de page */
+              /* Footer fixe en bas de chaque page */
               .footer-fixed {
-                position: absolute;
-                bottom: 5mm;
-                left: 10mm;
-                right: 10mm;
+                position: relative;
+                width: 100%;
+                height: 60px;
                 page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                background-color: white;
+                border-top: 1px solid #ccc;
               }
 
               /* Conteneur de page pour le positionnement du footer */
               .page-container {
                 position: relative;
-                min-height: calc(100vh - 1mm);
-                padding-bottom: 10mm;
+                min-height: 277mm; /* A4 height minus page margins */
+                height: 277mm; /* Hauteur fixe pour A4 */
+                display: flex;
+                flex-direction: column;
+                overflow: hidden; /* évite les débordements qui créent des pages vides */
+              }
+
+              /* Filigrane/Arrière-plan de page */
+              .page-container::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url('/images/mio-arriere-plan.jpg') no-repeat center center;
+                background-size: 70% auto; /* Ajustez 60-90% selon rendu voulu */
+                opacity: 0.01; /* Filigrane légèrement plus visible */
+                z-index: 0;
+                pointer-events: none;
+              }
+
+              /* S'assurer que le contenu passe au-dessus du filigrane */
+              .page-container > * {
+                position: relative;
+                z-index: 1;
               }
 
               /* Éviter que les espacements créent des pages vides */
               .summary-spacing {
-                margin-bottom: 15mm; /* Réduit pour éviter les débordements */
+                margin-bottom: 10mm; /* espace modéré avant le footer */
+              }
+
+              /* Contenu principal - éviter qu'il déborde sur le footer */
+              .main-content {
+                flex: 1;
+                min-height: 0;
+                max-height: calc(277mm - 60px); /* Hauteur totale moins footer */
               }
 
               .print-header {
@@ -283,20 +354,52 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
         {productPages.length > 0 ? (
           productPages.map((pageProducts, pageIndex) => (
           <div key={pageIndex} className={`page-container ${pageIndex > 0 ? 'page-break' : ''} ${pageIndex === productPages.length - 1 ? 'last-page-content' : ''}`}>
-            {/* Header - répété sur chaque page */}
-            <div style={{
-              textAlign: 'center',
-              marginBottom: '20px',
-              borderBottom: '2px solid #333',
-              padding: '15px'
-            }}>
+            {/* Fallback watermark image (visible même si le pseudo-élément n'est pas imprimé) */}
+            <img
+              src={"/images/mio-arriere-plan.jpg"}
+              alt="Watermark"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                margin: 'auto',
+                width: '80%',
+                height: 'auto',
+                opacity: 0.08,
+                zIndex: 0,
+                pointerEvents: 'none'
+              }}
+            />
+            {/* Contenu principal de la page */}
+            <div className="main-content">
+              {/* Header - répété sur chaque page */}
+              <div style={{
+                textAlign: 'center',
+                marginBottom: '20px',
+                borderBottom: '2px solid #333',
+                padding: '15px',
+                position: 'relative',
+                minHeight: '60px'
+              }}>
+              {/* Logo en haut à gauche */}
+              <img
+                src={"/images/logo-fmcg-300x183.jpg"}
+                alt="Logo"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  height: '50px',
+                  width: 'auto',
+                  objectFit: 'contain'
+                }}
+              />
               {/* Titre principal */}
               <div style={{
                 fontSize: '24px',
                 fontWeight: 'bold',
                 marginBottom: '15px',
                 color: '#333',
-                textAlign: 'left'
+                textAlign: 'center'
               }}>
                 BON DE LIVRAISON
               </div>
@@ -321,7 +424,7 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                   </div>
                   <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Numéro BL:</span>
-                    <span>{sortie.numero_bl}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{sortie.numero_bl}</span>
                   </div>
                   <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Poids (KG):</span>
@@ -331,7 +434,13 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Téléphone Client:</span>
                     <span>{sortie.client?.telephone || ''}</span>
                   </div>
-                                                       <div style={{ display: 'flex' }}>
+                  {sortie.livreur?.nom && sortie.livreur.nom.trim() !== '' && (
+                    <div style={{ display: 'flex' }}>
+                      <span style={{ width: '120px', fontWeight: 'bold' }}>Livreur:</span>
+                      <span>{sortie.livreur.nom}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Nombre de Pages:</span>
                     <span>{productPages.length}</span>
                   </div>
@@ -359,16 +468,18 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                     <span>{sortie.commercial?.telephone || ''}</span>
                   </div>
                   <div style={{ display: 'flex' }}>
-                    <span style={{ width: '120px', fontWeight: 'bold' }}>Livreur:</span>
-                    <span>{sortie.livreur?.nom || ''}</span>
+                    <span style={{ width: '120px', fontWeight: 'bold' }}>Type Client :</span>
+                    <span>{Math.trunc(Number(sortie.client_gdg ?? 0)).toString()}</span>
                   </div>
+
+
                   <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Code Client:</span>
                     <span>{sortie.client?.code || ''}</span>
                   </div>
                   <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Nom Client:</span>
-                    <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{sortie.client?.nom || ''}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{sortie.client?.nom || ''}</span>
                   </div>
                   <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Adresse:</span>
@@ -386,7 +497,7 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                 width: '100%',
                 borderCollapse: 'collapse',
                 marginBottom: '20px',
-                border: '1px solid #ccc',
+                border: '2px solid #ccc',
                 tableLayout: 'fixed'
               }}>
               <thead>
@@ -433,6 +544,7 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                   }}>Prix Unitaire</th>
                   <th style={{
                     border: '1px solid #ccc',
+                    borderRight: '2px solid #ccc',
                     padding: '4px 6px',
                     textAlign: 'right',
                     fontWeight: 'bold',
@@ -444,10 +556,20 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
               </thead>
               <tbody>
                 {pageProducts.map((product, index) => {
-                  // Calculer l'index global (toutes les pages ont 25 produits max)
-                  const globalIndex = pageIndex * PRODUCTS_PER_PAGE + index;
+                  // Calculer l'index global en tenant compte des pages précédentes
+                  let globalIndex = 0;
+                  for (let i = 0; i < pageIndex; i++) {
+                    globalIndex += productPages[i].length;
+                  }
+                  globalIndex += index;
+
+                  // Vérifier si le produit est gratuit (prix = 0)
+                  const isFreeProduct = Number(product.prix_produit) === 0;
+
                   return (
-                    <tr key={globalIndex}>
+                    <tr key={globalIndex} style={{
+                      backgroundColor: isFreeProduct ? '#fae398' : 'transparent'
+                    }}>
                       <td style={{
                         border: '1px solid #ccc',
                         padding: '4px 6px',
@@ -480,6 +602,7 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                       }}>{formatNumber(product.prix_produit)}</td>
                       <td style={{
                         border: '1px solid #ccc',
+                        borderRight: '2px solid #ccc',
                         padding: '4px 6px',
                         textAlign: 'right',
                         fontWeight: 'bold',
@@ -501,145 +624,147 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                 display: 'flex',
                 justifyContent: 'flex-end',
                 marginTop: '20px',
-                marginBottom: '10mm', /* CORRIGÉ: Encore plus réduit */
-                pageBreakAfter: 'avoid' /* AJOUTÉ: Évite explicitement les pages vides */
+                marginBottom: '10mm',
+                pageBreakAfter: 'avoid'
               }}>
                 <div style={{
-                  border: '3px double #000',
+                  border: '1px solid #ccc',
                   padding: '10px',
                   fontSize: '11px',
                   lineHeight: '1.4',
-                  minWidth: '250px'
+                  minWidth: '250px',
+                  backgroundColor: 'rgba(245, 245, 245, 0.3)'
                 }}>
-                  {/* Calcul: total_general - montant_remise_especes - remise_speciale - remise_trimestrielle + valeur_ajoutee + retour */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'left' }}><strong>Montant:</strong></span>
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'right' }}>{formatNumber(sortie.total_general || 0)}</span>
-                  </div>
-
-                  {/* Remise Es - affichée seulement si significative */}
-                  {isSignificantValue(sortie.montant_remise_especes) && (
+                  {totalsEqual ? (
+                    // Si égal, n'afficher que "Montant Total"
                     <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      marginBottom: '4px',
-                      backgroundColor: '#fefce8',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #fde047'
+                      padding: '4px 6px'
                     }}>
-                      <span style={{ fontSize: '13px', textAlign: 'left' }}>Remise Es ({sortie.remise_es || '0'}%):</span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#dc2626', textAlign: 'right' }}>-{formatNumber(sortie.montant_remise_especes || 0)}</span>
+                      <span style={{ fontSize: '18px', fontWeight: 'bold', textAlign: 'left' }}>Montant Total:</span>
+                      <span style={{ fontSize: '18px', fontWeight: 'bold', textAlign: 'right' }}>{formatNumber(sortie.montant_total_final || 0)}</span>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Calcul: total_general - remises + ajustements */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '4px 6px',
+                        borderBottom: '1px solid #ccc'
+                      }}>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'left' }}>Montant:</span>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'right' }}>{formatNumber(sortie.total_general || 0)}</span>
+                      </div>
 
-                  {/* Remise Spéciale - affichée seulement si significative */}
-                  {isSignificantValue(sortie.remise_speciale) && (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '4px',
-                      backgroundColor: '#fefce8',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #fde047'
-                    }}>
-                      <span style={{ fontSize: '13px', textAlign: 'left' }}>Remise Spéciale:</span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#dc2626', textAlign: 'right' }}>-{formatNumber(sortie.remise_speciale || 0)}</span>
-                    </div>
-                  )}
+                      {/* Remise Es - affichée seulement si significative */}
+                      {isSignificantValue(sortie.montant_remise_especes) && (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '4px 6px',
+                          borderBottom: '1px solid #ccc',
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                        }}>
+                          <span style={{ fontSize: '11px', textAlign: 'left' }}>Remise Es ({sortie.remise_es || '0'}%):</span>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#dc2626', textAlign: 'right' }}>-{formatNumber(sortie.montant_remise_especes || 0)}</span>
+                        </div>
+                      )}
 
-                  {/* Remise Trimestrielle - affichée seulement si significative */}
-                  {isSignificantValue(sortie.remise_trimestrielle) && (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '4px',
-                      backgroundColor: '#fefce8',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #fde047'
-                    }}>
-                      <span style={{ fontSize: '13px', textAlign: 'left' }}>Remise Trimestrielle:</span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#dc2626', textAlign: 'right' }}>-{formatNumber(sortie.remise_trimestrielle || 0)}</span>
-                    </div>
-                  )}
 
-                  {/* Valeur Ajoutée - affichée seulement si significative */}
-                  {isSignificantValue(sortie.valeur_ajoutee) && (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '4px',
-                      backgroundColor: '#fefce8',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #fde047'
-                    }}>
-                      <span style={{ fontSize: '13px', textAlign: 'left' }}>Valeur Ajoutée:</span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669', textAlign: 'right' }}>+{formatNumber(sortie.valeur_ajoutee || 0)}</span>
-                    </div>
-                  )}
+                      {/* Remise Spéciale - affichée seulement si significative */}
+                      {isSignificantValue(sortie.remise_speciale) && (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '4px 6px',
+                          borderBottom: '1px solid #ccc',
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                        }}>
+                          <span style={{ fontSize: '11px', textAlign: 'left' }}>Remise Spéciale:</span>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#dc2626', textAlign: 'right' }}>-{formatNumber(sortie.remise_speciale || 0)}</span>
+                        </div>
+                      )}
 
-                  {/* Retour - affiché seulement si significatif */}
-                  {isSignificantValue(sortie.retour) && (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '4px',
-                      backgroundColor: '#fefce8',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #fde047'
-                    }}>
-                      <span style={{ fontSize: '13px', textAlign: 'left' }}>Retour:</span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669', textAlign: 'right' }}>+{formatNumber(sortie.retour || 0)}</span>
-                    </div>
-                  )}
+                      {/* Remise Trimestrielle - affichée seulement si significative */}
+                      {isSignificantValue(sortie.remise_trimestrielle) && (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '4px 6px',
+                          borderBottom: '1px solid #ccc',
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                        }}>
+                          <span style={{ fontSize: '11px', textAlign: 'left' }}>Remise Trimestrielle:</span>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#dc2626', textAlign: 'right' }}>-{formatNumber(sortie.remise_trimestrielle || 0)}</span>
+                        </div>
+                      )}
 
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    borderTop: '1px solid #000',
-                    paddingTop: '4px',
-                    marginTop: '4px'
-                  }}>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold', textAlign: 'left' }}><strong>Montant Total:</strong></span>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold', textAlign: 'right' }}><strong>{formatNumber(sortie.montant_total_final || 0)}</strong></span>
-                  </div>
+                      {/* Valeur Ajoutée - affichée seulement si significative */}
+                      {isSignificantValue(sortie.valeur_ajoutee) && (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '4px 6px',
+                          borderBottom: '1px solid #ccc',
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                        }}>
+                          <span style={{ fontSize: '11px', textAlign: 'left' }}>Valeur Ajoutée:</span>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#059669', textAlign: 'right' }}>+{formatNumber(sortie.valeur_ajoutee || 0)}</span>
+                        </div>
+                      )}
+
+                      {/* Retour - affiché seulement si significatif */}
+                      {isSignificantValue(sortie.retour) && (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '4px 6px',
+                          borderBottom: '1px solid #ccc',
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                        }}>
+                          <span style={{ fontSize: '11px', textAlign: 'left' }}>Retour:</span>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#059669', textAlign: 'right' }}>+{formatNumber(sortie.retour || 0)}</span>
+                        </div>
+                      )}
+
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '4px 6px',
+                        borderTop: '2px solid #ccc',
+                        backgroundColor: 'rgba(245, 245, 245, 0.35)'
+                      }}>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'left' }}>Montant Total:</span>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'right' }}>{formatNumber(sortie.montant_total_final || 0)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
+            </div> {/* Fermeture de main-content */}
 
             {/* Footer - sur chaque page */}
-            <div className="footer-fixed" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '8px',
-              color: '#666',
-              borderTop: '1px solid #ccc',
-              paddingTop: '1px',
-              lineHeight: '1'
-            }}>
-              <div>
-                {new Date().toLocaleDateString('fr-FR')} {new Date().toLocaleTimeString('fr-FR')}
-              </div>
-              <div>
-                                 Page {pageIndex + 1} sur {productPages.length}
-              </div>
-            </div>
+            <Footer
+              currentPage={pageIndex + 1}
+              totalPages={productPages.length}
+            />
           </div>
         ))
         ) : (
           // Page vide si aucun produit
           <div className="page-container">
-            {/* Header - page vide */}
-            <div style={{
-              textAlign: 'center',
-              marginBottom: '20px',
-              borderBottom: '2px solid #333',
-              padding: '15px'
-            }}>
+            {/* Contenu principal de la page */}
+            <div className="main-content">
+              {/* Header - page vide */}
+              <div style={{
+                textAlign: 'center',
+                marginBottom: '20px',
+                borderBottom: '2px solid #333',
+                padding: '15px'
+              }}>
               {/* Titre principal */}
               <div style={{
                 fontSize: '24px',
@@ -704,10 +829,12 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Téléphone Com:</span>
                     <span>{sortie.commercial?.telephone || ''}</span>
                   </div>
-                  <div style={{ display: 'flex' }}>
-                    <span style={{ width: '120px', fontWeight: 'bold' }}>Livreur:</span>
-                    <span>{sortie.livreur?.nom || ''}</span>
-                  </div>
+                  {sortie.livreur?.nom && sortie.livreur.nom.trim() !== '' && (
+                    <div style={{ display: 'flex' }}>
+                      <span style={{ width: '120px', fontWeight: 'bold' }}>Livreur:</span>
+                      <span>{sortie.livreur.nom}</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex' }}>
                     <span style={{ width: '120px', fontWeight: 'bold' }}>Code Client:</span>
                     <span>{sortie.client?.code || ''}</span>
@@ -725,6 +852,7 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
                 </div>
               </div>
             </div>
+            </div> {/* Fermeture de main-content */}
 
             {/* Message d'absence de produits */}
             <div style={{
@@ -738,23 +866,11 @@ export const PrintableSortie = React.forwardRef<HTMLDivElement, PrintableSortieP
               Aucun produit dans cette sortie
             </div>
 
-                         {/* Footer - page sans produits */}
-             <div className="footer-fixed" style={{
-               display: 'flex',
-               justifyContent: 'space-between',
-               fontSize: '8px',
-               color: '#666',
-               borderTop: '1px solid #ccc',
-               paddingTop: '1px',
-               lineHeight: '1'
-             }}>
-               <div>
-                 {new Date().toLocaleDateString('fr-FR')} {new Date().toLocaleTimeString('fr-FR')}
-               </div>
-               <div>
-                 Page 1 sur 1
-               </div>
-             </div>
+            {/* Footer - page sans produits */}
+            <Footer
+              currentPage={1}
+              totalPages={1}
+            />
           </div>
         )}
       </div>

@@ -43,7 +43,8 @@ class SortieRequest extends FormRequest
             'valeur_ajoutee' => 'nullable|numeric',
             'retour' => 'nullable|numeric',
             'remise_es' => 'nullable|string|max:255',
-            'client_gdg' => 'nullable|numeric|min:0|max:100',
+            // Autoriser les valeurs négatives pour Client G/DG (ex: -10%)
+            'client_gdg' => 'nullable|numeric|min:-100|max:100',
             'total_general' => 'nullable|numeric|min:0',
             'montant_total_final' => 'nullable|numeric|min:0',
             'total_poids' => 'nullable|numeric|min:0',
@@ -81,7 +82,7 @@ class SortieRequest extends FormRequest
             'valeur_ajoutee.numeric' => 'La valeur ajoutée doit être un nombre.',
             'retour.numeric' => 'Le retour doit être un nombre.',
             'client_gdg.numeric' => 'Le pourcentage client G/DG doit être un nombre.',
-            'client_gdg.min' => 'Le pourcentage client G/DG doit être positif.',
+            'client_gdg.min' => 'Le pourcentage client G/DG doit être supérieur ou égal à -100%.',
             'client_gdg.max' => 'Le pourcentage client G/DG ne peut pas dépasser 100%.',
             'total_general.numeric' => 'Le total général doit être un nombre.',
             'total_general.min' => 'Le total général doit être positif.',

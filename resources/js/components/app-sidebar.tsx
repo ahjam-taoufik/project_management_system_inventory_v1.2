@@ -70,7 +70,7 @@ export function AppSidebar() {
                 }] : []),
             ]
         }] : []),
-        ...(hasPermission('brands.view') || hasPermission('categories.view') || hasPermission('products.view') || hasPermission('promotions.view') ? [{
+        ...(hasPermission('brands.view') || hasPermission('categories.view') || hasPermission('products.view') ? [{
             title: 'Manage Product',
             icon: Package,
             subItems: [
@@ -89,10 +89,25 @@ export function AppSidebar() {
                     href: '/products',
                     icon: Package2,
                 }] : []),
-                ...(hasPermission('promotions.view') ? [{
-                    title: 'Promotions',
-                    href: '/promotions',
-                    icon: Gift,
+            ]
+        }] : []),
+        // Nouveau menu Promotions avec deux sous-liens : Promotion Entrée et Promotion Sortie
+        // Affiché si l'utilisateur a les nouvelles permissions OU l'ancienne permission globale 'promotions.view'
+        ...(hasPermission('promotions_entrer.view') || hasPermission('promotions_sortie.view') || hasPermission('promotions.view') ? [{
+            title: 'Promotions',
+            icon: Gift,
+            subItems: [
+                // Sous-lien Entrée visible si nouvelle permission OU ancienne permission globale
+                ...(hasPermission('promotions_entrer.view') || hasPermission('promotions.view') ? [{
+                    title: 'Promotion Entrée',
+                    href: '/promotions-entrer',
+                    icon: ArrowDownToLine,
+                }] : []),
+                // Sous-lien Sortie visible si nouvelle permission OU ancienne permission globale
+                ...(hasPermission('promotions_sortie.view') || hasPermission('promotions.view') ? [{
+                    title: 'Promotion Sortie',
+                    href: '/promotions-sortie',
+                    icon: ArrowUpFromLine,
                 }] : []),
             ]
         }] : []),

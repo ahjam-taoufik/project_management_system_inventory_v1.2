@@ -3,9 +3,9 @@ export interface Sortie {
     numero_bl: string;
     commercial: {
         id: number;
-        code: string;
-        nom: string;
-        telephone: string;
+        commercial_code: string;
+        commercial_fullName: string;
+        commercial_telephone: string;
     };
     client: {
         id: number;
@@ -57,11 +57,9 @@ export interface SortieProduct {
 
 export interface Commercial {
     id: number;
-    code: string;
-    nom: string;
-    telephone: string;
-    commercial_fullName?: string;
-    commercial_telephone?: string;
+    commercial_code: string;
+    commercial_fullName: string;
+    commercial_telephone: string;
 }
 
 export interface Client {

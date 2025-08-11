@@ -43,9 +43,9 @@ class SortieController extends Controller
                 'numero_bl' => $sortie->numero_bl,
                 'commercial' => [
                     'id' => $sortie->commercial->id,
-                    'code' => $sortie->commercial->commercial_code,
-                    'nom' => $sortie->commercial->commercial_fullName,
-                    'telephone' => $sortie->commercial->commercial_telephone,
+                    'commercial_code' => $sortie->commercial->commercial_code,
+                    'commercial_fullName' => $sortie->commercial->commercial_fullName,
+                    'commercial_telephone' => $sortie->commercial->commercial_telephone,
                 ],
                 'client' => [
                     'id' => $sortie->client->id,
@@ -216,9 +216,9 @@ class SortieController extends Controller
             'numero_bl' => $sortie->numero_bl,
             'commercial' => [
                 'id' => $sortie->commercial->id,
-                'code' => $sortie->commercial->commercial_code,
-                'nom' => $sortie->commercial->commercial_fullName,
-                'telephone' => $sortie->commercial->commercial_telephone,
+                'commercial_code' => $sortie->commercial->commercial_code,
+                'commercial_fullName' => $sortie->commercial->commercial_fullName,
+                'commercial_telephone' => $sortie->commercial->commercial_telephone,
             ],
             'client' => [
                 'id' => $sortie->client->id,

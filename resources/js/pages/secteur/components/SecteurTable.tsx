@@ -76,7 +76,6 @@ const multiSelectFilter: FilterFn<unknown> = (
 export function SecteurTable<TData, TValue>({
   columns,
   data,
-  villes,
 }: DataTableProps<TData, TValue>) {
 
 
@@ -145,6 +144,8 @@ export function SecteurTable<TData, TValue>({
     },
     filterFns: {
         multiSelect: multiSelectFilter,
+        idMultiSelect: multiSelectFilter,
+        globalSearch: multiSelectFilter,
     },
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),

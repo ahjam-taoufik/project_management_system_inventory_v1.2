@@ -19,6 +19,8 @@ class PromotionRequest extends FormRequest
             'produit_offert_id' => 'required|exists:products,id',
             'quantite_produit_offert' => 'required|integer|min:1',
             'is_active' => 'nullable|boolean',
+            // mouvement_type est défini au niveau du contrôleur; si jamais il est soumis, on le valide strictement
+            'mouvement_type' => 'sometimes|in:entrer,sortie',
         ];
     }
 

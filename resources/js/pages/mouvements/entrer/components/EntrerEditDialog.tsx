@@ -938,7 +938,7 @@ export default function EntrerEditDialog({
                                 if (product) {
                                   const mainRef = product.product_Ref;
                                   try {
-                                    const promoRes = await fetch(`/promotion-for-product/${mainRef}`);
+                                  const promoRes = await fetch(`/promotion-for-product/${mainRef}?type=entrer`);
                                     if (promoRes.ok) {
                                       const promoData = await promoRes.json();
                                       const x = promoData.quantite_produit_promotionnel;

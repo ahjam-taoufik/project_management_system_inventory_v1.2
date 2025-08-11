@@ -84,11 +84,21 @@ class PermissionSeeder extends Seeder
                             'transporteurs.create',
                             'transporteurs.edit',
                             'transporteurs.delete',
-                            // Permissions Promotions
+                            // Permissions Promotions (globales pour compatibilité)
                             'promotions.view',
                             'promotions.create',
                             'promotions.edit',
                             'promotions.delete',
+                            // Permissions Promotions Entrée
+                            'promotions_entrer.view',
+                            'promotions_entrer.create',
+                            'promotions_entrer.edit',
+                            'promotions_entrer.delete',
+                            // Permissions Promotions Sortie
+                            'promotions_sortie.view',
+                            'promotions_sortie.create',
+                            'promotions_sortie.edit',
+                            'promotions_sortie.delete',
                             // Permissions Entrers
                             'entrers.view',
                             'entrers.create',

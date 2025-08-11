@@ -49,7 +49,7 @@ export default function AppTable() {
             </CardHeader>
             <CardContent className="w-full overflow-x-auto p-1 sm:p-2 md:p-4">
                 <div className="min-w-[300px]">
-                    <SortieTable data={sortiesArray} columns={columns} />
+                    <SortieTable data={sortiesArray} columns={columns} commerciaux={commerciauxArray} clients={clientsArray} />
                 </div>
             </CardContent>
         </Card>

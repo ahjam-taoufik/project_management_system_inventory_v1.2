@@ -360,116 +360,124 @@ function FilterArea({
   commerciaux: Commercial[];
   villes: Ville[];
 }) {
+  const hasActiveFilters = selectedCategories.length > 0 || selectedStatuses.length > 0 || selectedCommerciaux.length > 0 || selectedVilles.length > 0;
+
   return (
-    <div className="flex gap-3 poppins">
-      {selectedStatuses.length > 0 && (
-        <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
-          <span className="text-gray-600">Status</span>
-          <Separator orientation="vertical" />
-          <div className="flex gap-2 items-center">
-            {selectedStatuses.length < 3 ? (
-              <>
-                {selectedStatuses.map((status, index) => (
-                  <Badge key={index} variant={"secondary"}>
-                    {status}
-                  </Badge>
-                ))}
-              </>
-            ) : (
-              <>
-                <Badge variant={"secondary"}>3 Selected</Badge>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+    <div className="flex gap-3 poppins min-h-[40px] items-center">
+      {hasActiveFilters ? (
+        <>
+          {selectedStatuses.length > 0 && (
+            <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
+              <span className="text-gray-600">Status</span>
+              <Separator orientation="vertical" />
+              <div className="flex gap-2 items-center">
+                {selectedStatuses.length < 3 ? (
+                  <>
+                    {selectedStatuses.map((status, index) => (
+                      <Badge key={index} variant={"secondary"}>
+                        {status}
+                      </Badge>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <Badge variant={"secondary"}>3 Selected</Badge>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
-      {selectedCategories.length > 0 && (
-        <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
-          <span className="text-gray-600">category</span>
-          <Separator orientation="vertical" />
-          <div className="flex gap-2 items-center">
-            {selectedCategories.length < 3 ? (
-              <>
-                {selectedCategories.map((category, index) => (
-                  <Badge key={index} variant={"secondary"}>
-                    {category}
-                  </Badge>
-                ))}
-              </>
-            ) : (
-              <>
-                <Badge variant={"secondary"}>3 Selected</Badge>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+          {selectedCategories.length > 0 && (
+            <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
+              <span className="text-gray-600">category</span>
+              <Separator orientation="vertical" />
+              <div className="flex gap-2 items-center">
+                {selectedCategories.length < 3 ? (
+                  <>
+                    {selectedCategories.map((category, index) => (
+                      <Badge key={index} variant={"secondary"}>
+                        {category}
+                      </Badge>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <Badge variant={"secondary"}>3 Selected</Badge>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
-      {selectedCommerciaux.length > 0 && (
-        <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
-          <span className="text-gray-600">Commercial</span>
-          <Separator orientation="vertical" />
-          <div className="flex gap-2 items-center">
-            {selectedCommerciaux.length < 3 ? (
-              <>
-                {selectedCommerciaux.map((commercialId, index) => {
-                  const commercial = commerciaux.find(c => c.id.toString() === commercialId);
-                  return (
-                    <Badge key={index} variant={"secondary"}>
-                      {commercial?.commercial_code || commercialId}
-                    </Badge>
-                  );
-                })}
-              </>
-            ) : (
-              <>
-                <Badge variant={"secondary"}>{selectedCommerciaux.length} Selected</Badge>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+          {selectedCommerciaux.length > 0 && (
+            <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
+              <span className="text-gray-600">Commercial</span>
+              <Separator orientation="vertical" />
+              <div className="flex gap-2 items-center">
+                {selectedCommerciaux.length < 3 ? (
+                  <>
+                    {selectedCommerciaux.map((commercialId, index) => {
+                      const commercial = commerciaux.find(c => c.id.toString() === commercialId);
+                      return (
+                        <Badge key={index} variant={"secondary"}>
+                          {commercial?.commercial_code || commercialId}
+                        </Badge>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <>
+                    <Badge variant={"secondary"}>{selectedCommerciaux.length} Selected</Badge>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
-      {selectedVilles.length > 0 && (
-        <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
-          <span className="text-gray-600">Ville</span>
-          <Separator orientation="vertical" />
-          <div className="flex gap-2 items-center">
-            {selectedVilles.length < 3 ? (
-              <>
-                {selectedVilles.map((villeId, index) => {
-                  const ville = villes.find(v => v.id.toString() === villeId);
-                  return (
-                    <Badge key={index} variant={"secondary"}>
-                      {ville?.nameVille || villeId}
-                    </Badge>
-                  );
-                })}
-              </>
-            ) : (
-              <>
-                <Badge variant={"secondary"}>{selectedVilles.length} Selected</Badge>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+          {selectedVilles.length > 0 && (
+            <div className="border-dashed border rounded-sm p-1 flex gap-2 items-center px-2 text-sm">
+              <span className="text-gray-600">Ville</span>
+              <Separator orientation="vertical" />
+              <div className="flex gap-2 items-center">
+                {selectedVilles.length < 3 ? (
+                  <>
+                    {selectedVilles.map((villeId, index) => {
+                      const ville = villes.find(v => v.id.toString() === villeId);
+                      return (
+                        <Badge key={index} variant={"secondary"}>
+                          {ville?.nameVille || villeId}
+                        </Badge>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <>
+                    <Badge variant={"secondary"}>{selectedVilles.length} Selected</Badge>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
-      {(selectedCategories.length > 0 || selectedStatuses.length > 0 || selectedCommerciaux.length > 0 || selectedVilles.length > 0) && (
-        <Button
-          onClick={() => {
-            setSelectedCategories([]);
-            setSelectedStatuses([]);
-            setSelectedCommerciaux([]);
-            setSelectedVilles([]);
-          }}
-          variant={"ghost"}
-          className="p-1 px-2"
-        >
-          <span>Reset</span>
-          <IoClose />
-        </Button>
+          <Button
+            onClick={() => {
+              setSelectedCategories([]);
+              setSelectedStatuses([]);
+              setSelectedCommerciaux([]);
+              setSelectedVilles([]);
+            }}
+            variant={"ghost"}
+            className="p-1 px-2"
+          >
+            <span>Reset</span>
+            <IoClose />
+          </Button>
+        </>
+      ) : (
+        <div className="text-sm text-gray-400">
+          Aucun filtre actif
+        </div>
       )}
     </div>
   );

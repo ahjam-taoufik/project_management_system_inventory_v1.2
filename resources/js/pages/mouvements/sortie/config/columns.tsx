@@ -54,13 +54,14 @@ export const columns: ColumnDef<Sortie>[] = [
     },
   },
   {
-    accessorKey: "commercial.code",
+    accessorKey: "commercial.commercial_code",
     header: "Commercial",
     cell: ({ row }) => {
       const commercial = row.original.commercial;
       return (
         <div className="flex flex-col">
-          <span className="text-sm font-medium">{commercial.code}</span>
+          <span className="text-sm font-medium">{commercial.commercial_code}</span>
+          <span className="text-xs text-muted-foreground">{commercial.commercial_fullName}</span>
         </div>
       );
     },
@@ -178,6 +179,34 @@ export const columns: ColumnDef<Sortie>[] = [
         <div className="flex flex-col">
           <span className={`text-sm font-medium ${gdg && gdg > 0 ? 'text-red-600' : 'text-gray-400'}`}>
             {gdg ? formatNumber(gdg) : '0,00'}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "remise_trimestrielle",
+    header: "Remise Trim (DH)",
+    cell: ({ row }) => {
+      const remiseTrimestrielle = row.getValue("remise_trimestrielle") as number;
+      const formatNumber = (value: number): string => {
+        const num = parseFloat(value?.toString() || '0');
+        if (isNaN(num)) return '0,00';
+
+        // Convertir en chaîne avec 2 décimales
+        const formatted = num.toFixed(2);
+
+        // Ajouter les espaces pour les milliers
+        const parts = formatted.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+        return parts.join(',');
+      };
+
+      return (
+        <div className="flex flex-col">
+          <span className={`text-sm font-medium ${remiseTrimestrielle && remiseTrimestrielle > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+            {remiseTrimestrielle ? formatNumber(remiseTrimestrielle) : '0,00'}
           </span>
         </div>
       );
