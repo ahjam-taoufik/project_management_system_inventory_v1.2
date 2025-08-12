@@ -1,0 +1,53 @@
+"use client";
+import AppTable from '@/pages/mouvements/avoir/AppTable';
+import { Card } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { Head } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Toaster } from 'react-hot-toast';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Gérer les Avoirs',
+        href: '/avoirs',
+    },
+];
+
+export default function Index() {
+    const [isLoad, setIsLoad] = useState(false);
+
+    useEffect(() => {
+        setIsLoad(true);
+    }, []);
+
+    if (!isLoad) return null;
+
+    return (
+        <>
+            <Toaster
+                position="top-center"
+                reverseOrder={true}
+                gutter={8}
+                toastOptions={{
+                    className: '',
+                    duration: 4000,
+                    removeDelay: 1000,
+                    style: {
+                        border: '1px solid #713200',
+                        padding: '16px',
+                        color: '#713200',
+                    },
+                }}
+            />
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Avoirs" />
+                <div className="poppins p-3 border w-full min-h-screen">
+                    <Card className='flex flex-col shadow-none p-1'>
+                        <AppTable />
+                    </Card>
+                </div>
+            </AppLayout>
+        </>
+    );
+}
