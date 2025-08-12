@@ -87,11 +87,30 @@ Ce document présente l'analyse MERISE du système de gestion commerciale et de 
   - Index : (numero_bl, date_bl), (commercial_id, client_id)
 
 - **SORTIE_PRODUCTS** : Détail des produits dans les sorties
-  - Attributs : id, sortie_id, product_id, ref_produit, prix_produit, quantite_produit, poids_produit, total_ligne, timestamps
+  - Attributs : id, sortie_id, product_id, ref_produit, prix_produit, quantite_produit, poids_produit, total_ligne, use_achat_price, timestamps
   - Clé primaire : id
   - Clés étrangères :
     - sortie_id → SORTIES
     - product_id → PRODUCTS
+
+- **AVOIRS** : Avoirs/Retours clients
+  - Attributs : id, numero_avoir, date_avoir, client_id, commercial_id, livreur_id, raison_retour, ajustement_financier, statut, montant_total, poids_total, timestamps
+  - Clé primaire : id
+  - Clés étrangères :
+    - client_id → CLIENTS
+    - commercial_id → COMMERCIAUX
+    - livreur_id → LIVREURS
+  - Contraintes d'unicité : numero_avoir (unique)
+  - Notes : statut peut être 'en_attente', 'valide', 'refuse'
+
+- **AVOIR_PRODUCTS** : Détail des produits dans les avoirs
+  - Attributs : id, avoir_id, product_id, quantite_retournee, prix_unitaire, prix_original, prix_personnalise, montant_ligne, raison_detail, sortie_origine_id, timestamps
+  - Clé primaire : id
+  - Clés étrangères :
+    - avoir_id → AVOIRS
+    - product_id → PRODUCTS
+    - sortie_origine_id → SORTIES (nullable)
+  - Notes : prix_personnalise indique si le prix a été modifié manuellement
 
 ### 1.7 Gestion des Promotions
 - **PROMOTIONS** : Promotions commerciales
@@ -123,7 +142,9 @@ CATEGORIES (1) ←→ (N) PRODUCTS
 ```
 COMMERCIAUX (1) ←→ (N) CLIENTS
 COMMERCIAUX (1) ←→ (N) SORTIES
+COMMERCIAUX (1) ←→ (N) AVOIRS
 CLIENTS (1) ←→ (N) SORTIES
+CLIENTS (1) ←→ (N) AVOIRS
 ```
 
 ### 2.3 Relations de Stock
@@ -131,13 +152,17 @@ CLIENTS (1) ←→ (N) SORTIES
 PRODUCTS (1) ←→ (1) STOCKS
 PRODUCTS (1) ←→ (N) ENTRERS
 PRODUCTS (1) ←→ (N) SORTIE_PRODUCTS
+PRODUCTS (1) ←→ (N) AVOIR_PRODUCTS
 ```
 
 ### 2.4 Relations de Mouvements
 ```
 TRANSPORTEURS (1) ←→ (N) ENTRERS
 LIVREURS (1) ←→ (N) SORTIES
+LIVREURS (1) ←→ (N) AVOIRS
 SORTIES (1) ←→ (N) SORTIE_PRODUCTS
+AVOIRS (1) ←→ (N) AVOIR_PRODUCTS
+SORTIES (1) ←→ (N) AVOIR_PRODUCTS (via sortie_origine_id)
 ```
 
 ### 2.5 Relations de Promotions
@@ -179,6 +204,13 @@ PRODUCTS (1) ←→ (N) PROMOTIONS (en tant que produit offert)
 - Contraintes d'unicité sur les codes et références
 - Gestion des valeurs nulles appropriée
 
+### 3.7 Gestion des Avoirs
+- Système de statuts : en_attente, valide, refuse
+- Prix flexible : prix original ou prix personnalisé
+- Ajustement financier : valeur positive ou négative pour corriger le total
+- Traçabilité : lien optionnel vers la sortie d'origine
+- Impact sur le stock : augmentation du stock disponible lors de validation
+
 ## 4. FLUX PRINCIPAUX
 
 ### 4.1 Flux d'Entrée
@@ -189,6 +221,11 @@ TRANSPORTEUR → ENTRER → PRODUCT → STOCK
 ### 4.2 Flux de Sortie
 ```
 COMMERCIAL + CLIENT → SORTIE → SORTIE_PRODUCTS → STOCK
+```
+
+### 4.4 Flux d'Avoir (Retour)
+```
+COMMERCIAL + CLIENT → AVOIR → AVOIR_PRODUCTS → STOCK (augmentation)
 ```
 
 ### 4.3 Flux de Gestion
@@ -216,6 +253,14 @@ BRAND → CATEGORY → PRODUCT
 
 ### 5.4 Modifications des PROMOTIONS
 - **Activation** : Ajout du champ is_active pour activer/désactiver les promotions
+
+### 5.5 Ajout du Module AVOIRS
+- **Nouvelle entité AVOIRS** : Gestion des retours clients avec statuts
+- **Nouvelle entité AVOIR_PRODUCTS** : Détail des produits retournés
+- **Flexibilité des prix** : Prix original ou prix personnalisé selon l'évolution
+- **Ajustement financier** : Valeur positive ou négative pour corriger les montants
+- **Traçabilité** : Lien optionnel vers la sortie d'origine pour audit
+- **Impact sur le stock** : Augmentation automatique du stock disponible lors de validation
 
 ## 6. POINTS D'ATTENTION
 

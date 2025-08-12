@@ -1,6 +1,6 @@
 import React from "react";
 import { usePage } from "@inertiajs/react";
-import { 
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -42,7 +42,7 @@ export function StockValueFilter({ value, onChange }: StockValueFilterProps) {
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectLabel>Valeur de stock</SelectLabel>
+            <SelectLabel>Stock disponible</SelectLabel>
             <SelectItem value="all">Tous les produits</SelectItem>
             <SelectItem value="positive">
               <div className="flex items-center gap-2">

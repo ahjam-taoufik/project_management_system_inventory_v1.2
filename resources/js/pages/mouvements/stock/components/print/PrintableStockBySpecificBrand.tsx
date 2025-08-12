@@ -13,8 +13,8 @@ interface PrintableStockBySpecificBrandProps {
 }
 
 export const PrintableStockBySpecificBrand = React.forwardRef<HTMLDivElement, PrintableStockBySpecificBrandProps>(
-  ({ 
-    stocks, 
+  ({
+    stocks,
     brand,
     totalMontantAchat = 0,
     totalMontantVente = 0
@@ -27,26 +27,26 @@ export const PrintableStockBySpecificBrand = React.forwardRef<HTMLDivElement, Pr
     });
 
     // Filtrer les stocks pour ne garder que ceux de la marque spécifiée
-    const brandStocks = stocks.filter(stock => 
+    const brandStocks = stocks.filter(stock =>
       stock.product?.brand_id === brand.id
     );
 
     // Calculer les totaux pour cette marque
-    const brandTotalAchat = brandStocks.reduce((total, stock) => 
-      total + calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis), 0);
+    const brandTotalAchat = brandStocks.reduce((total, stock) =>
+              total + calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis), 0);
 
-    const brandTotalVente = brandStocks.reduce((total, stock) => 
-      total + calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis), 0);
+    const brandTotalVente = brandStocks.reduce((total, stock) =>
+              total + calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis), 0);
 
     const brandTotalDiff = brandTotalVente - brandTotalAchat;
 
     // Pourcentage de la marque par rapport au total
-    const percentageOfTotalAchat = totalMontantAchat > 0 
-      ? (brandTotalAchat / totalMontantAchat * 100) 
+    const percentageOfTotalAchat = totalMontantAchat > 0
+      ? (brandTotalAchat / totalMontantAchat * 100)
       : 0;
 
-    const percentageOfTotalVente = totalMontantVente > 0 
-      ? (brandTotalVente / totalMontantVente * 100) 
+    const percentageOfTotalVente = totalMontantVente > 0
+      ? (brandTotalVente / totalMontantVente * 100)
       : 0;
 
     return (
@@ -176,7 +176,7 @@ export const PrintableStockBySpecificBrand = React.forwardRef<HTMLDivElement, Pr
                 border-collapse: collapse;
               }
 
-              .totals-table th, 
+              .totals-table th,
               .totals-table td {
                 padding: 8px;
                 text-align: right;
@@ -273,7 +273,7 @@ export const PrintableStockBySpecificBrand = React.forwardRef<HTMLDivElement, Pr
             <tr>
               <th>Produit</th>
               <th>Référence</th>
-              <th className="text-right">Valeur Stock</th>
+              <th className="text-right">Stock Disponible</th>
               <th className="text-right">Prix Achat (DH)</th>
               <th className="text-right">Prix Vente (DH)</th>
               <th className="text-right">Montant Achat (DH)</th>
@@ -283,15 +283,15 @@ export const PrintableStockBySpecificBrand = React.forwardRef<HTMLDivElement, Pr
           </thead>
           <tbody>
             {brandStocks.map((stock, index) => {
-              const montantAchat = calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis);
-              const montantVente = calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis);
+                      const montantAchat = calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis);
+        const montantVente = calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis);
               const diff = montantVente - montantAchat;
 
               return (
                 <tr key={stock.id || index}>
                   <td>{stock.product?.product_libelle || ''}</td>
                   <td>{stock.product?.product_Ref || '-'}</td>
-                  <td className="text-right">{formatNombre(stock.valeur_stock)}</td>
+                                      <td className="text-right">{formatNombre(stock.stock_disponible)}</td>
                   <td className="text-right">{formatPrix(stock.product?.prix_achat_colis)}</td>
                   <td className="text-right">{formatPrix(stock.product?.prix_vente_colis)}</td>
                   <td className="text-right">{formatPrix(montantAchat)}</td>

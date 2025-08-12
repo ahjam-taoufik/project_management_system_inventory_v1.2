@@ -14,8 +14,8 @@ interface PrintableStockByBrandProps {
 }
 
 export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableStockByBrandProps>(
-  ({ 
-    stocks, 
+  ({
+    stocks,
     brands,
     totalMontantAchat = 0,
     totalMontantVente = 0,
@@ -30,16 +30,16 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
 
     // Grouper les stocks par marque
     const stocksByBrand = brands.map(brand => {
-      const brandStocks = stocks.filter(stock => 
+      const brandStocks = stocks.filter(stock =>
         stock.product?.brand_id === brand.id
       );
 
       // Calculer les totaux pour cette marque
-      const brandTotalAchat = brandStocks.reduce((total, stock) => 
-        total + calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis), 0);
+      const brandTotalAchat = brandStocks.reduce((total, stock) =>
+        total + calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis), 0);
 
-      const brandTotalVente = brandStocks.reduce((total, stock) => 
-        total + calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis), 0);
+      const brandTotalVente = brandStocks.reduce((total, stock) =>
+        total + calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis), 0);
 
       return {
         brand,
@@ -267,7 +267,7 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
                 border-collapse: collapse;
               }
 
-              .totals-table th, 
+              .totals-table th,
               .totals-table td {
                 padding: 8px;
                 text-align: right;
@@ -334,7 +334,7 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
                   <tr>
                     <th>Produit</th>
                     <th>Référence</th>
-                    <th className="text-right">Valeur Stock</th>
+                    <th className="text-right">Stock Disponible</th>
                     <th className="text-right">Prix Achat (DH)</th>
                     <th className="text-right">Prix Vente (DH)</th>
                     <th className="text-right">Montant Achat (DH)</th>
@@ -350,26 +350,26 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
                         className="text-right"
                         style={{
                           backgroundColor:
-                            Number(stock.valeur_stock) < 0
+                            Number(stock.stock_disponible) < 0
                               ? "#ffcccc"
-                              : Number(stock.valeur_stock) === 0
+                              : Number(stock.stock_disponible) === 0
                               ? "#ffffcc"
                               : "transparent",
                           color:
-                            Number(stock.valeur_stock) < 0
+                            Number(stock.stock_disponible) < 0
                               ? "#cc0000"
                               : "inherit"
                         }}
                       >
-                        {formatNombre(stock.valeur_stock)}
+                        {formatNombre(stock.stock_disponible)}
                       </td>
                       <td className="text-right">{formatPrix(stock.product?.prix_achat_colis)}</td>
                       <td className="text-right">{formatPrix(stock.product?.prix_vente_colis)}</td>
                       <td className="text-right">
-                        {formatPrix(calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis))}
+                        {formatPrix(calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis))}
                       </td>
                       <td className="text-right">
-                        {formatPrix(calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis))}
+                        {formatPrix(calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis))}
                       </td>
                     </tr>
                   ))}
@@ -403,7 +403,7 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
                 <tr>
                   <th>Produit</th>
                   <th>Référence</th>
-                  <th className="text-right">Valeur Stock</th>
+                  <th className="text-right">Stock Disponible</th>
                   <th className="text-right">Prix Achat (DH)</th>
                   <th className="text-right">Prix Vente (DH)</th>
                   <th className="text-right">Montant Achat (DH)</th>
@@ -418,25 +418,25 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
                     <td
                       className="text-right"
                       style={{
-                        backgroundColor: Number(stock.valeur_stock ?? 0) < 0
+                        backgroundColor: Number(stock.stock_disponible ?? 0) < 0
                           ? "#ffcccc"
-                          : Number(stock.valeur_stock ?? 0) === 0
+                          : Number(stock.stock_disponible ?? 0) === 0
                           ? "#ffffcc"
                           : "transparent",
-                        color: Number(stock.valeur_stock ?? 0) < 0
+                        color: Number(stock.stock_disponible ?? 0) < 0
                           ? "#cc0000"
                           : "inherit"
                       }}
                     >
-                      {formatNombre(stock.valeur_stock)}
+                      {formatNombre(stock.stock_disponible)}
                     </td>
                     <td className="text-right">{formatPrix(stock.product?.prix_achat_colis)}</td>
                     <td className="text-right">{formatPrix(stock.product?.prix_vente_colis)}</td>
                     <td className="text-right">
-                      {formatPrix(calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis))}
-                    </td>
-                    <td className="text-right">
-                      {formatPrix(calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis))}
+                                              {formatPrix(calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis))}
+                      </td>
+                      <td className="text-right">
+                        {formatPrix(calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis))}
                     </td>
                   </tr>
                 ))}
@@ -445,7 +445,7 @@ export const PrintableStockByBrand = React.forwardRef<HTMLDivElement, PrintableS
             </div>
 
             <div className="brand-totals">
-              <div>Achat: {formatPrix(group.totalAchat)} DH | Vente: {formatPrix(group.totalVente)} DH | 
+              <div>Achat: {formatPrix(group.totalAchat)} DH | Vente: {formatPrix(group.totalVente)} DH |
               Diff: <span className={group.diff >= 0 ? 'positive' : 'negative'}>{formatPrix(group.diff)} DH</span></div>
             </div>
           </div>

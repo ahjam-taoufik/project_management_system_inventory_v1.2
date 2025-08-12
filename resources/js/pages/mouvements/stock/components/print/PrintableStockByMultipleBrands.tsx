@@ -34,10 +34,10 @@ export const PrintableStockByMultipleBrands = React.forwardRef<HTMLDivElement, P
 
     // Calculer les totaux pour ces marques
     const brandsTotalAchat = filteredStocks.reduce((total, stock) =>
-      total + calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis), 0);
+              total + calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis), 0);
 
     const brandsTotalVente = filteredStocks.reduce((total, stock) =>
-      total + calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis), 0);
+              total + calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis), 0);
 
     const brandsTotalDiff = brandsTotalVente - brandsTotalAchat;
 
@@ -54,9 +54,9 @@ export const PrintableStockByMultipleBrands = React.forwardRef<HTMLDivElement, P
     const stocksByBrand = brands.map(brand => {
       const brandStocks = filteredStocks.filter(stock => stock.product?.brand_id === brand.id);
       const brandTotalAchat = brandStocks.reduce((total, stock) =>
-        total + calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis), 0);
+        total + calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis), 0);
       const brandTotalVente = brandStocks.reduce((total, stock) =>
-        total + calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis), 0);
+        total + calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis), 0);
       const brandTotalDiff = brandTotalVente - brandTotalAchat;
 
       return {
@@ -168,12 +168,12 @@ export const PrintableStockByMultipleBrands = React.forwardRef<HTMLDivElement, P
                 font-weight: bold;
                 font-size: 12px;
               }
-              
+
               /* Répéter les en-têtes de tableau sur chaque page */
               .print-table thead {
                 display: table-header-group;
               }
-              
+
               /* Permettre aux corps de tableau de se diviser entre les pages */
               .print-table tbody {
                 display: table-row-group;
@@ -356,7 +356,7 @@ export const PrintableStockByMultipleBrands = React.forwardRef<HTMLDivElement, P
                 <tr>
                   <th>Produit</th>
                   <th>Référence</th>
-                  <th className="text-right">Valeur Stock</th>
+                  <th className="text-right">Stock Disponible</th>
                   <th className="text-right">Prix Achat (DH)</th>
                   <th className="text-right">Prix Vente (DH)</th>
                   <th className="text-right">Montant Achat (DH)</th>
@@ -366,15 +366,15 @@ export const PrintableStockByMultipleBrands = React.forwardRef<HTMLDivElement, P
               </thead>
               <tbody>
                 {brandData.stocks.map((stock, index) => {
-                  const montantAchat = calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis);
-                  const montantVente = calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis);
+                          const montantAchat = calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis);
+        const montantVente = calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis);
                   const diff = montantVente - montantAchat;
 
                   return (
                     <tr key={stock.id || index}>
                       <td>{stock.product?.product_libelle || ''}</td>
                       <td>{stock.product?.product_Ref || '-'}</td>
-                      <td className="text-right">{formatNombre(stock.valeur_stock)}</td>
+                      <td className="text-right">{formatNombre(stock.stock_disponible)}</td>
                       <td className="text-right">{formatPrix(stock.product?.prix_achat_colis)}</td>
                       <td className="text-right">{formatPrix(stock.product?.prix_vente_colis)}</td>
                       <td className="text-right">{formatPrix(montantAchat)}</td>

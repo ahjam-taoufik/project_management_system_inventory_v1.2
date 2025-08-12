@@ -336,7 +336,7 @@ export function PrintButtons({
             // Calculer le total en ignorant les valeurs négatives
             stocks.reduce((total, stock) => {
               // Calculer le montant pour ce stock
-              const montant = calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis);
+              const montant = calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis);
               // Ajouter au total seulement si c'est positif
               return total + (montant > 0 ? montant : 0);
             }, 0)
@@ -345,7 +345,7 @@ export function PrintButtons({
             // Calculer le total en ignorant les valeurs négatives
             stocks.reduce((total, stock) => {
               // Calculer le montant pour ce stock
-              const montant = calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis);
+              const montant = calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis);
               // Ajouter au total seulement si c'est positif
               return total + (montant > 0 ? montant : 0);
             }, 0)
@@ -353,8 +353,8 @@ export function PrintButtons({
           totalDiff={
             // Recalculer la différence avec les nouveaux totaux
             stocks.reduce((total, stock) => {
-              const montantVente = calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis);
-              const montantAchat = calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis);
+                      const montantVente = calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis);
+        const montantAchat = calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis);
               // Ajouter au total seulement si les montants sont positifs
               return total + ((montantVente > 0 ? montantVente : 0) - (montantAchat > 0 ? montantAchat : 0));
             }, 0)

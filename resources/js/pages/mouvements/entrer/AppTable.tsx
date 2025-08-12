@@ -27,7 +27,7 @@ export default function AppTable() {
     }, []);
 
     return (
-        <Card className="mt-6 md:mt-12 flex flex-col shadow-none poppins border-none w-full max-w-full overflow-x-auto">
+        <Card className="mt-6 md:mt-1 flex flex-col shadow-none poppins border-none w-full max-w-full overflow-x-auto">
             <CardHeader className="flex justify-between p-2 md:p-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
                     <div>

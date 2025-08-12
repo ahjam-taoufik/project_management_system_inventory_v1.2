@@ -109,6 +109,13 @@ class PermissionSeeder extends Seeder
                             'sorties.create',
                             'sorties.edit',
                             'sorties.delete',
+                            // Permissions Avoirs
+                            'avoirs.view',
+                            'avoirs.create',
+                            'avoirs.edit',
+                            'avoirs.delete',
+                            'avoirs.validate',
+
                             // Permissions Stocks
                             'stocks.view',
         ];

@@ -102,15 +102,30 @@ export function SortieTable<TData, TValue>({ columns, data, commerciaux = [], cl
         return filtered;
     }, [data, showArchived, selectedCommerciaux, selectedClients, selectedDates, selectedGDG]);
 
-    // Calculer le montant général des lignes filtrées
-    const totalMontantGeneral = React.useMemo(() => {
+    // Calculer le montant final total des sorties filtrées
+    const totalMontantFinal = React.useMemo(() => {
         return filteredData.reduce((total, sortie) => {
             const sortieData = sortie as Sortie;
+
             // Calculer le vrai total des lignes de produits pour chaque sortie
             const totalLignes = sortieData.products.reduce((ligneTotal, product) => {
                 return ligneTotal + Number(product.total_ligne || 0);
             }, 0);
-            return total + totalLignes;
+
+            // Gérer remise_es comme chaîne ou nombre
+            const remiseEs = sortieData.remise_es === 'Oui' ? 10 : Number(sortieData.remise_es || 0);
+            const remiseSpeciale = Number(sortieData.remise_speciale || 0);
+            const remiseTrimestrielle = Number(sortieData.remise_trimestrielle || 0);
+            const valeurAjoutee = Number(sortieData.valeur_ajoutee || 0);
+            const retour = Number(sortieData.retour || 0);
+
+            // Calculer le montant de remise ES
+            const montantRemiseEs = (totalLignes * remiseEs) / 100;
+
+            // Calculer le montant final de cette sortie
+            const montantFinalSortie = totalLignes - montantRemiseEs - remiseSpeciale - remiseTrimestrielle + valeurAjoutee + retour;
+
+            return total + montantFinalSortie;
         }, 0);
     }, [filteredData]);
 
@@ -159,7 +174,7 @@ export function SortieTable<TData, TValue>({ columns, data, commerciaux = [], cl
                 setSelectedGDG={setSelectedGDG}
                 showArchived={showArchived}
                 setShowArchived={setShowArchived}
-                totalMontantGeneral={totalMontantGeneral}
+                totalMontantFinal={totalMontantFinal}
                 nombreSortiesFiltrees={nombreSortiesFiltrees}
             />
 
@@ -457,7 +472,7 @@ function FilterArea({
     setSelectedGDG,
     showArchived,
     setShowArchived,
-    totalMontantGeneral,
+    totalMontantFinal,
     nombreSortiesFiltrees,
 }: {
     selectedCommerciaux: string[];
@@ -472,7 +487,7 @@ function FilterArea({
     setSelectedGDG: React.Dispatch<React.SetStateAction<string[]>>;
     showArchived: boolean;
     setShowArchived: React.Dispatch<React.SetStateAction<boolean>>;
-    totalMontantGeneral: number;
+    totalMontantFinal: number;
     nombreSortiesFiltrees: number;
 }) {
     const hasActiveFilters = selectedCommerciaux.length > 0 || selectedClients.length > 0 || selectedDates.length > 0 || selectedGDG.length > 0 || !showArchived;
@@ -626,15 +641,30 @@ function FilterArea({
                 )}
             </div>
 
-            {/* Affichage du montant total des lignes filtrées */}
+            {/* Affichage du montant final total des sorties filtrées */}
             {nombreSortiesFiltrees > 0 && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
                     <div className="text-sm text-gray-600">
-                        Total: <span className="font-medium">{nombreSortiesFiltrees} sortie{nombreSortiesFiltrees > 1 ? 's' : ''}</span>
+                        Montant Final: <span className="font-medium">{nombreSortiesFiltrees} sortie{nombreSortiesFiltrees > 1 ? 's' : ''}</span>
                     </div>
                     <Separator orientation="vertical" className="h-4" />
                     <div className="text-lg font-bold text-green-700">
-                        {totalMontantGeneral.toFixed(2)} DH
+                        {(() => {
+                            const formatNumber = (value: number): string => {
+                                const num = parseFloat(value?.toString() || '0');
+                                if (isNaN(num)) return '0,00';
+
+                                // Convertir en chaîne avec 2 décimales
+                                const formatted = num.toFixed(2);
+
+                                // Ajouter les espaces pour les milliers
+                                const parts = formatted.split('.');
+                                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+                                return parts.join(',');
+                            };
+                            return formatNumber(totalMontantFinal);
+                        })()} DH
                     </div>
                 </div>
             )}

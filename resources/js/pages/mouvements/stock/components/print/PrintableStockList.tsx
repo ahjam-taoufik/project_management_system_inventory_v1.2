@@ -227,7 +227,7 @@ export const PrintableStockList = React.forwardRef<HTMLDivElement, PrintableStoc
               <th>Produit</th>
               <th>Référence</th>
               <th>Marque</th>
-              <th className="text-right">Valeur Stock</th>
+              <th className="text-right">Stock Disponible</th>
               <th className="text-right">Prix Achat (DH)</th>
               <th className="text-right">Prix Vente (DH)</th>
               <th className="text-right">Montant Achat (DH)</th>
@@ -241,16 +241,16 @@ export const PrintableStockList = React.forwardRef<HTMLDivElement, PrintableStoc
                 <td>{stock.product?.product_Ref || '-'}</td>
                 <td>{stock.product?.brand?.brand_name || '-'}</td>
                 <td className="text-right" style={{
-                  backgroundColor: Number(stock.valeur_stock ?? 0) < 0 ? "#ffcccc" : Number(stock.valeur_stock ?? 0) === 0 ? "#ffffcc" : "transparent",
-                  color: Number(stock.valeur_stock ?? 0) < 0 ? "#cc0000" : "inherit"
-                }}>{formatNombre(stock.valeur_stock)}</td>
+                  backgroundColor: Number(stock.stock_disponible ?? 0) < 0 ? "#ffcccc" : Number(stock.stock_disponible ?? 0) === 0 ? "#ffffcc" : "transparent",
+                  color: Number(stock.stock_disponible ?? 0) < 0 ? "#cc0000" : "inherit"
+                }}>{formatNombre(stock.stock_disponible)}</td>
                 <td className="text-right">{formatPrix(stock.product?.prix_achat_colis)}</td>
                 <td className="text-right">{formatPrix(stock.product?.prix_vente_colis)}</td>
                 <td className="text-right">
-                  {formatPrix(calculerMontant(stock.valeur_stock, stock.product?.prix_achat_colis))}
+                  {formatPrix(calculerMontant(stock.stock_disponible, stock.product?.prix_achat_colis))}
                 </td>
                 <td className="text-right">
-                  {formatPrix(calculerMontant(stock.valeur_stock, stock.product?.prix_vente_colis))}
+                  {formatPrix(calculerMontant(stock.stock_disponible, stock.product?.prix_vente_colis))}
                 </td>
               </tr>
             ))}

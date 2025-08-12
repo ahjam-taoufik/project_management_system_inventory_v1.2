@@ -33,7 +33,7 @@ export default function AppTable() {
     }, []);
 
     return (
-        <Card className="poppins mt-6 flex w-full max-w-full flex-col overflow-x-auto border-none shadow-none md:mt-12">
+        <Card className="poppins mt-2 flex w-full max-w-full flex-col overflow-x-auto border-none shadow-none md:mt-1">
             <CardHeader className="flex justify-between p-2 md:p-4">
                 <div className="flex w-full flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                     <div>

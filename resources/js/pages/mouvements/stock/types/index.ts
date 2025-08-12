@@ -15,7 +15,7 @@ export type Stock = {
   quantite_totale_sortie: number | null;
   stock_minimum: number | null;
   stock_maximum: number | null;
-  valeur_stock: string | null;
+  stock_disponible: number | null;
   derniere_entree: string | null;
   derniere_sortie: string | null;
   created_at: string;

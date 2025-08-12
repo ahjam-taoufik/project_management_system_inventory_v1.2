@@ -19,6 +19,7 @@ interface ProtectedComboboxProps {
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
+  buttonClassName?: string;
   dropdownDirection?: 'up' | 'down';
 }
 
@@ -30,6 +31,7 @@ export default function ProtectedCombobox({
   placeholder = "Sélectionnez...",
   searchPlaceholder = "Rechercher...",
   className,
+  buttonClassName,
   dropdownDirection = 'down'
 }: ProtectedComboboxProps) {
   const [open, setOpen] = useState(false);
@@ -49,14 +51,14 @@ export default function ProtectedCombobox({
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const dropdownHeight = 300; // hauteur max du dropdown
-      
+
       let top = rect.bottom + window.scrollY + 4; // position par défaut (vers le bas)
-      
+
       // Si dropdownDirection est 'up' ou si pas assez d'espace en bas
       if (dropdownDirection === 'up' || (window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight)) {
         top = rect.top + window.scrollY - dropdownHeight - 4;
       }
-      
+
       setDropdownPosition({
         top,
         left: rect.left + window.scrollX,
@@ -91,7 +93,7 @@ export default function ProtectedCombobox({
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('scroll', handleScroll, true);
@@ -136,7 +138,7 @@ export default function ProtectedCombobox({
         variant="outline"
         role="combobox"
         aria-expanded={open}
-        className="w-full justify-between h-10 sm:h-11"
+        className={cn("w-full justify-between h-10 sm:h-11", buttonClassName)}
         disabled={disabled}
         onClick={(e) => {
           e.preventDefault();

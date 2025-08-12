@@ -42,8 +42,8 @@ export default function Index() {
             />
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="Entrées" />
-                <div className="poppins p-5 border w-full min-h-screen">
-                    <Card className='flex flex-col shadow-none p-5'>
+                <div className="poppins p-3 border w-full min-h-screen">
+                    <Card className='flex flex-col shadow-none p-1'>
                         <AppTable />
                     </Card>
                 </div>
